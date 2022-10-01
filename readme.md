@@ -44,7 +44,7 @@ Workers that you write can interact with DurableDocs via its methods.
 
 # API Example
 
-Somewhere in a CloudFlare worker or Durable Object instance:
+Creating documents, adding them to other documents, and accessing values:
 ```ts
 // Typescript
 
@@ -90,7 +90,6 @@ Output:
 Before: newThread reply ids: []
 After: newThread reply ids: ["12345bca"]
 ```
-
 
 Later:
 ```ts
