@@ -1,0 +1,29 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"lib": [
+			"esnext"
+		],
+		"alwaysStrict": true,
+		"strict": true,
+		"noEmitOnError": true,
+		"noEmit": false,
+		"moduleResolution": "node",
+		"outDir": "dist",
+		"removeComments": false,
+		"preserveConstEnums": true,
+		"esModuleInterop": false,
+		"types": [
+			"@cloudflare/workers-types"
+		],
+		"noImplicitAny": false,
+		"skipLibCheck": true,
+		"allowJs": false
+	},
+	"include": [
+		"src"
+	],
+	"exclude": [
+		"node_modules"
+	]
+}
