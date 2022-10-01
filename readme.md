@@ -1,6 +1,9 @@
 
 # DurableDocs (Alpha)
 
+[![GitHub license](https://img.shields.io/github/license/TaylorSwanson/DurableDocs?style=flat-square)](https://github.com/TaylorSwanson/DurableDocs/blob/main/LICENSE)
+![npm](https://img.shields.io/npm/v/durabledocs?style=flat-square)
+
 **This package is in active development and the API is subject to change**.
 It is currently being extracted from a larger project into a standalone
 module.
@@ -42,6 +45,46 @@ application that uses Durable Objects extensively.  Other Durable Objects and
 Workers that you write can interact with DurableDocs via its methods.
 
 
+# API Documentation
+
+## DurableDocs
+The `DurableDocs` constructor must be passed a reference to the
+`DurableObjectNamespace` corresponding with the `DurableDocData` class's binding
+in the Worker.
+
+Your `wrangler.toml` file for your worker might look something like this:
+
+```toml
+name = "example"
+compatibility_date = "2022-10-01"
+minify = true
+
+main = "./src/index.ts"
+
+[durable_objects]
+  bindings = [
+    { name = "DURABLE_DOC_DATA", class_name = "DurableDocData" }
+  ]
+
+[[migrations]]
+  tag = "v1" # Should be unique for each entry
+  new_classes = ["DurableDocData"]
+```
+
+However you choose to name the `DurableDocData` class binding, you must pass it
+back to the `DurableDocs` constructor:
+```ts
+import { DurableDocs } from "durabledocs";
+
+// Pass your binding from the environment provided to your worker to contructor.
+// "DURABLE_DOC_DATA" is the name of the binding in wrangler.toml:
+const docs = new DurableDocs(env.DURABLE_DOC_DATA);
+```
+
+
+### Creating documents
+
+
 # API Example
 
 Creating documents, adding them to other documents, and accessing values:
@@ -51,8 +94,8 @@ Creating documents, adding them to other documents, and accessing values:
 import { DurableDocs, DurableDocData } from "durabledocs";
 
 // All DurableDocs instances access the same data if passed the same namespace
-// env.Durable_Doc_Data is of type DurableObjectNamespace
-const docs = new DurableDocs(env.Durable_Doc_Data);
+// env.DURABLE_DOC_DATA is of type DurableObjectNamespace
+const docs = new DurableDocs(env.DURABLE_DOC_DATA);
 
 const newThread = await docs.create({
   title: "Lorem Ipsum",
@@ -68,7 +111,7 @@ const newThread = await docs.create({
 });
 
 const reply = await docs.create({
-  author: DurableDocs.ObjectId("111"),      // Referring to an existing user
+  author: DurableDocs.ObjectId("111"),      // An existing user
   content: "Morbi ullamcorper dapibus metus, sed porttitor diam feugiat nec.",
   properties: {
     createdAt: new Date()

@@ -1,6 +1,6 @@
 {
   "name": "durabledocs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Simple document database wrapper on top of CloudFlare's global Durable Objects platform",
   "main": "dist/index.js",
   "repository": {
