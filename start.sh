@@ -12,4 +12,4 @@ if [[ ! -z "$PID" ]]; then
   kill -9 $PID
 fi
 
-npx wrangler dev --local
+npx wrangler dev --local --port 8188
