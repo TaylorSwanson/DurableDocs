@@ -9,7 +9,7 @@ name = "durable-documents"
 compatibility_date = "2022-11-30"
 minify = true
 
-main = "./src/index.ts"
+main = "./test/index.ts"
 tsconfig = "./tsconfig.json"
 
 [dev]
@@ -18,12 +18,9 @@ tsconfig = "./tsconfig.json"
 # https://developers.cloudflare.com/workers/learning/using-durable-objects
 [durable_objects]
   bindings = [
-    { name = "THING", class_name = "Thing" },
-    { name = "USER", class_name = "User" },
-    { name = "ROOM", class_name = "Room" },
-    { name = "LIST", class_name = "List" },
+    { name = "DURABLE_DOC_DATA", class_name = "DurableDocData" }
   ]
 
 [[migrations]]
   tag = "v1" # Should be unique for each entry
-  new_classes = ["Thing"]
+  new_classes = ["DurableDocData"]

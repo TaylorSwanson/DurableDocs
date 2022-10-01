@@ -6,12 +6,12 @@ import Document from "./Document";
 
 // Used at a high level to access the database
 
-export class DurableDocuments {
+export class DurableDocs {
   // Reference to the DO
   private DONamespace: DurableObjectNamespace;
   
   constructor(storeNamespace: DurableObjectNamespace) {
-    if (!(storeNamespace instanceof DurableDocumentData)) {
+    if (!(storeNamespace instanceof DurableDocData)) {
       throw new Error("ObjectStore must be initialized with a reference to an ObjectStoreData Namespace");
     }
 
@@ -56,7 +56,7 @@ export class DurableDocuments {
  * DurableObject class for Durable Document content. This class should be
  * referenced as a binding in your wrangler.toml file.
  */
-export class DurableDocumentData {
+export class DurableDocData {
   state: DurableObjectState;
   env: any;
 
