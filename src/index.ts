@@ -3,27 +3,43 @@
 
 import ObjectId from "./ObjectId";
 import Document from "./Document";
-
-// Used at a high level to access the database
+import List from "./List";
 
 export class DurableDocs {
-  // Reference to the DO
+  
+  /**
+   * Durable Object class namespace - must be compatible with DurableDocs,
+   * should refer to a DurableObject class provided by DurableDocs package.
+   * 
+   * @see DurableDocData
+   */
   private DONamespace: DurableObjectNamespace;
   
   constructor(storeNamespace: DurableObjectNamespace) {
     if (!(storeNamespace instanceof DurableDocData)) {
       throw new Error("ObjectStore must be initialized with a reference to an ObjectStoreData Namespace");
     }
-
+    
     this.DONamespace = storeNamespace;
   }
+  
+  /**
+   * Placeholder reference for a single document id in a new document
+   * @see ObjectId
+   */
+  static ObjectId = new ObjectId();
+  /**
+   * Placeholder reference for a list of documents in a new document
+   * @see List
+   */
+  static List = new List();
 
   /**
-   * Create a new document in the database.
-   * @param objectData Content to store.
-   * @returns The newly created document.
+   * Create and save a new document
+   * @param objectData Content to store
+   * @returns The newly created document
    */
-  async create(objectData?: any): Promise<Document> {
+  async create(objectData?: { [key: string]: any }): Promise<Document> {
     // TODO make new DO instance and then create the document for it
     const newDOId = this.DONamespace.newUniqueId();
     const document = new Document(newDOId, this.DONamespace);
@@ -32,20 +48,11 @@ export class DurableDocs {
   }
 
   /**
-   * Get a document already stored in the database.
-   * @param getId Id of existing document.
-   * @returns The existing document.
+   * @param id Id of existing document
+   * @returns The document at that id
    */
-  async get(getId: string | ObjectId | Document): Promise<Document> {
-    // Extract the id string if necessary
-    let idString: string;
-    if (getId instanceof ObjectId || getId instanceof Document) {
-      idString = getId.id;
-    } else {
-      idString = getId;
-    }
-
-    const DOId = this.DONamespace.idFromString(idString);
+  async get(id: string): Promise<Document> {
+    const DOId = this.DONamespace.idFromString(id);
     const document = new Document(DOId, this.DONamespace);
 
     return document.init();
@@ -53,8 +60,9 @@ export class DurableDocs {
 }
 
 /**
- * DurableObject class for Durable Document content. This class should be
- * referenced as a binding in your wrangler.toml file.
+ * DurableObject class definition for DurableDocs database
+ * 
+ * This class should be referenced as a binding in your wrangler.toml file
  */
 export class DurableDocData {
   state: DurableObjectState;

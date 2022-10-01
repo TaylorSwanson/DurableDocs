@@ -4,42 +4,39 @@
 import Document from "./Document";
 import { getFromDO } from "./utils";
 
-type ListItemArray = [{
-  id: string,
-  createdAt: Date,
-  metadata?: string
-}];
-
 export default class List {
   // References for the DO
-  private id: string | undefined;
-  private doNamespace: DurableObjectNamespace;
-  private doStub: DurableObjectStub | undefined;
+  private id?: string;
+  private doNamespace?: DurableObjectNamespace;
+  private doStub?: DurableObjectStub;
 
   /**
    * Create a List instance which holds and interfaces with documents.
    * Providing no values to the constructor will create an empty list.
-   * @param doNamespace Reference to the DurableDocumentData class.
-   * @param id Id of DurableObject that holds contents for this List.
+   * @param doNamespace Reference to the DurableDocumentData class
+   * @param id Id of existing List-type DO
    */
   constructor(
-    doNamespace: DurableObjectNamespace, 
+    doNamespace?: DurableObjectNamespace, 
     id?: string
   ) {
     this.doNamespace = doNamespace;
     this.id = id;
 
-    if (id) {
+    if (doNamespace && id) {
       const doId = doNamespace.idFromString(id);
-      this.doStub = this.doNamespace.get(doId);
+      this.doStub = doNamespace.get(doId);
     }
   }
 
   /**
    * Provides access to full data contents of the objects stored in the List.
-   * @yields Every Document stored in this List.
+   * @yields Every Document stored in this List
    */
   public async *documents(): AsyncIterable<Promise<any>> {
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
     if (!this.doStub) {
       // This list is not created yet
       return [];

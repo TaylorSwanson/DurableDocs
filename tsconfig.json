@@ -4,21 +4,16 @@
 		"lib": [
 			"esnext"
 		],
-		"alwaysStrict": true,
 		"strict": true,
+		"alwaysStrict": true,
 		"noEmitOnError": true,
-		"noEmit": false,
 		"moduleResolution": "node",
 		"outDir": "dist",
 		"removeComments": false,
-		"preserveConstEnums": true,
-		"esModuleInterop": false,
 		"types": [
 			"@cloudflare/workers-types"
 		],
-		"noImplicitAny": false,
-		"skipLibCheck": true,
-		"allowJs": false
+		"noImplicitAny": false
 	},
 	"include": [
 		"src"
