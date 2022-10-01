@@ -1,11 +1,12 @@
 {
-  "name": "durable-docs",
+  "name": "durabledocs",
   "version": "0.1.0",
   "description": "Simple document database wrapper on top of CloudFlare's global Durable Objects platform",
   "main": "dist/index.js",
   "scripts": {
     "start": "./start.sh",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npx tsc"
   },
   "author": "Taylor Swanson",
   "license": "MPL-2.0",
