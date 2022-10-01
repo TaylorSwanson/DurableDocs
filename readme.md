@@ -2,7 +2,7 @@
 # DurableDocs (Alpha)
 
 **This package is in active development and the API is subject to change**.
-DurableDocs is currently being extracted from a larger project into a standalone
+ is currently being extracted from a larger project into a standalone
 module.
 
 
@@ -57,7 +57,7 @@ const docs = new DurableDocs(env.Durable_Doc_Data);
 const newThread = await docs.create({
   title: "Lorem Ipsum",
   content: "Consectetur adipiscing elit",
-  author: DurableDocs.ObjectId,
+  author: DurableDocs.ObjectId,             // Anonymous, not set
   properties: {
     views: 0,
     isLocked: false,
@@ -68,42 +68,63 @@ const newThread = await docs.create({
 });
 
 const reply = await docs.create({
-  author: DurableDocs.ObjectId,
+  author: DurableDocs.ObjectId("111"),      // Referring to an existing user
   content: "Morbi ullamcorper dapibus metus, sed porttitor diam feugiat nec.",
   properties: {
     createdAt: new Date()
   }
 });
 
+let replyIds = newThread.refs.replies.documents().map(reply => reply.id);
+console.log(`Before: newThread reply ids: ${ replyIds }`);
+
 await newThread.refs.replies.add(reply);
+// reply.id == "12345bca"
+
+replyIds = newThread.refs.replies.documents().map(reply => reply.id);
+console.log(`After: newThread reply ids: ${ replyIds }`);
 ```
+
+Output:
+```
+Before: newThread reply ids: []
+After: newThread reply ids: ["12345bca"]
+```
+
 
 Later:
 ```ts
 const replyId = "12345bca";
 const replyParents = await docs.get(replyId).parents();
 
-console.log("This post is referenced in these threads:");
-for await (const parentThread of replyParents) {
+console.log(`This post is referenced in ${ replyParents.length } threads:`);
+for await (const parentThread of replyParents.documents()) {
   const content = await parentThread.data();
-  console.log(content);
+  console.log({
+    id: parentThread.id,
+    content
+  });
 }
+
+console.log(`Thread`);
 ```
 
 Output:
 ```
-This post is referenced in these threads:
+This post is referenced in 1 threads:
 {
-  title: "Lorem Ipsum",
-  content: "Consectetur adipiscing elit",
-  author: "54321abc",
-  properties: {
-    views: 5,
-    isLocked: false,
-    isStickied: false,
-    createdAt: "2022-10-01T18:19:01.595Z"
+  id: "00000823756911274871238",
+  content: {
+    title: "Lorem Ipsum",
+    content: "Consectetur adipiscing elit",
+    author: undefined,
+    properties: {
+      views: 5,
+      isLocked: false,
+      isStickied: false,
+      createdAt: "2022-10-01T18:19:01.595Z"
+    }
+    replies: ["12345bca"]
   }
-  replies: ["12345bca"]
 }
 ```
-
