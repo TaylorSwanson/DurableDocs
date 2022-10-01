@@ -6,7 +6,7 @@
 # https://developers.cloudflare.com/workers/wrangler/configuration/#local-environments
 
 name = "durable-documents"
-compatibility_date = "2022-11-30"
+compatibility_date = "2022-09-30"
 minify = true
 
 main = "./test/index.ts"
