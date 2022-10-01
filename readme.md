@@ -2,7 +2,7 @@
 # DurableDocs (Alpha)
 
 **This package is in active development and the API is subject to change**.
- is currently being extracted from a larger project into a standalone
+It is currently being extracted from a larger project into a standalone
 module.
 
 
