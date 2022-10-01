@@ -1,16 +1,35 @@
 
 # DurableDocs (Alpha)
+DurableDocs is a document abstraction on top of CloudFlare's Durable Objects
+platform.
 
 [![GitHub license](https://img.shields.io/github/license/TaylorSwanson/DurableDocs?style=flat-square)](https://github.com/TaylorSwanson/DurableDocs/blob/main/LICENSE)
 ![npm](https://img.shields.io/npm/v/durabledocs?style=flat-square)
 
-**This package is in active development and the API is subject to change**.
-It is currently being extracted from a larger project into a standalone
-module.
+```ts
+// Make docs
+const post = await docs.create({
+  name: "Test post please ignore",
+  author: DurableDocs.ObjectId,
+  replies: DurableDocs.List
+});
+const reply = await docs.create({
+  content: "Replied to post",
+  author: DurableDocs.ObjectId(existingUserId)
+});
+// Associate reply to post
+await post.refs.replies.add(reply);
+```
 
+## Installation
+**This package is in active development and the API is subject to change!**
+It is currently being extracted from a larger project to a standalone module.
+
+```sh
+npm i durabledocs
+```
 
 ## Features
-
 Keep track of your Durable Objects!
 
 - Behaves similar to a document database
@@ -20,7 +39,6 @@ Keep track of your Durable Objects!
 
 
 ### Wishlist / Planned Features
-
 - Simple document index for scans and queries
 - Expiring documents
 - Unlimited-sized documents (best for data, not blob file storage!)
@@ -29,12 +47,7 @@ Keep track of your Durable Objects!
 - Custom functions for custom document behavior
 - Transactions
 
-
 ## Use Cases
-
-DurableDocs is a document abstraction on top of CloudFlare's Durable Objects
-platform.
-
 Useful in applications where:
 - Data can be split into a large number of individual documents
 - Documents are individually relatively small ( < 128KiB)
@@ -45,21 +58,41 @@ application that uses Durable Objects extensively.  Other Durable Objects and
 Workers that you write can interact with DurableDocs via its methods.
 
 
-# API Documentation
+# API
+## `DurableDocs`
+The constructor must be passed a reference to the `DurableObjectNamespace`
+corresponding with the `DurableDocData` class's binding in the Worker.
 
-## DurableDocs
-The `DurableDocs` constructor must be passed a reference to the
-`DurableObjectNamespace` corresponding with the `DurableDocData` class's binding
-in the Worker.
+## Static methods
 
-Your `wrangler.toml` file for your worker might look something like this:
+# Worker example
+The `DurableDocData` class is exported from the main package. Re-export it in
+your worker's main entrypoint:
+```ts
+// src/worker.ts
 
+import { DurableDocs, DurableDocData } from "durabledocs";
+
+// Cloudflare Worker
+export default {
+  async fetch(request: Request, env) {
+
+    // Instantiate
+    const docs = new DurableDocs(env.DURABLE_DOC_DATA);
+
+    // ... application logic
+  },
+  DurableDocData
+};
+```
 ```toml
-name = "example"
+# wrangler.toml
+
+name = "example-worker"
 compatibility_date = "2022-10-01"
 minify = true
 
-main = "./src/index.ts"
+main = "./src/worker.ts"
 
 [durable_objects]
   bindings = [
@@ -71,21 +104,7 @@ main = "./src/index.ts"
   new_classes = ["DurableDocData"]
 ```
 
-However you choose to name the `DurableDocData` class binding, you must pass it
-back to the `DurableDocs` constructor:
-```ts
-import { DurableDocs } from "durabledocs";
-
-// Pass your binding from the environment provided to your worker to contructor.
-// "DURABLE_DOC_DATA" is the name of the binding in wrangler.toml:
-const docs = new DurableDocs(env.DURABLE_DOC_DATA);
-```
-
-
-### Creating documents
-
-
-# API Example
+# General example
 
 Creating documents, adding them to other documents, and accessing values:
 ```ts
