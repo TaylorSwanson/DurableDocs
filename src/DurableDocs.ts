@@ -14,11 +14,11 @@ export class DurableDocs {
    * 
    * @see DurableDocData
    */
-  private DONamespace: DurableObjectNamespace;
+  private doNamespace: DurableObjectNamespace;
   private kvNamespace: KVNamespace;
   
   constructor(storeNamespace: DurableObjectNamespace, kvNamespace: KVNamespace) {
-    this.DONamespace = storeNamespace;
+    this.doNamespace = storeNamespace;
     this.kvNamespace = kvNamespace;
   }
   
@@ -41,8 +41,8 @@ export class DurableDocs {
    * @returns The newly created document
    */
   async create(objectData?: { [key: string]: any }): Promise<Document> {
-    const newDoId = this.DONamespace.newUniqueId();
-    const document = new Document(this.DONamespace, newDoId);
+    const newDoId = this.doNamespace.newUniqueId();
+    const document = new Document(this.doNamespace, newDoId);
 
     return document.init();
   }
@@ -52,8 +52,8 @@ export class DurableDocs {
    * @returns The document at that id
    */
   async get(id: string): Promise<Document> {
-    const doId = this.DONamespace.idFromString(id);
-    const document = new Document(this.DONamespace, doId,);
+    const doId = this.doNamespace.idFromString(id);
+    const document = new Document(this.doNamespace, doId);
 
     return document.init();
   }

@@ -1,6 +1,6 @@
 
 import Document from "./Document";
-import { getFromDO } from "./utils";
+import { getFromDO, initializeDO, setDOContent } from "./utils";
 
 /**
  * A List behaves as a pointer to a collection of documents. Create a List when
@@ -32,6 +32,23 @@ export default class List {
       this.doStub = this.doNamespace.get(doId);
     }
   }
+
+  /**
+   * Will create a DO and initialize it if this List doesn't have one already
+   */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+
+    // Skip if it exists
+    if (this.doStub) return;
+
+    const newDoId = this.doNamespace.newUniqueId();
+    this.doStub = this.doNamespace.get(newDoId);
+
+    await initializeDO(this.doStub, "list");
+  };
 
   /**
    * Provides access to full data contents of the objects stored in the List.
@@ -76,13 +93,36 @@ export default class List {
     return data?.items ?? [];
   }
 
+  public async add(doc: Document): Promise<this> {
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+    // Ensure doc exists
+    if (!this.doStub) {
+      const newDoId = this.doNamespace.newUniqueId();
+      this.doStub = this.doNamespace.get(newDoId);
+      await initializeDO(this.doStub, "list");
+    }
+
+    return this;
+  }
+
   /**
    * Clear the list contents without removing any orphan documents created.
    * @returns Number of documents cleared from the list
    */
   public async clear(): Promise<number> {
-    // TODO
-    return 2;
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+    // Don't create the doc if we're clearing it
+    if (!this.doStub) {
+      return 0;
+    }
+
+    await setDOContent(this.doStub, []);
+
+    return 3;
   }
 
   /**
@@ -90,7 +130,14 @@ export default class List {
    * @returns Number of documents cleared from the list
    */
   public async clearDelete(): Promise<number> {
-    // TODO
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+    // Don't create the doc if we're clearing it
+    if (!this.doStub) {
+      return 0;
+    }
+
     return 3;
   }
 }
