@@ -13,7 +13,8 @@
 		"types": [
 			"@cloudflare/workers-types"
 		],
-		"noImplicitAny": false
+		"noImplicitAny": false,
+		"declaration": true
 	},
 	"include": [
 		"src",

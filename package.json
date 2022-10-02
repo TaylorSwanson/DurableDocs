@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "./start.sh",
-    "build": "npx tsc && mv ./out/src ./dist && rm -rf ./out",
+    "build": "./build.sh",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublishOnly": "npm run build"
   },
