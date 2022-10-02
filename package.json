@@ -2,14 +2,16 @@
   "name": "durabledocs",
   "version": "0.1.1",
   "description": "Simple document database wrapper on top of CloudFlare's global Durable Objects platform",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "repository": {
+    "type": "git",
     "url": "https://github.com/TaylorSwanson/DurableDocs"
   },
   "scripts": {
     "start": "./start.sh",
+    "build": "npx tsc && mv ./out/src ./dist && rm -rf ./out",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepublishOnly": "npx tsc"
+    "prepublishOnly": "npm run build"
   },
   "author": "Taylor Swanson",
   "license": "MPL-2.0",

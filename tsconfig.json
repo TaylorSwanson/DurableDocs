@@ -8,7 +8,7 @@
 		"alwaysStrict": true,
 		"noEmitOnError": true,
 		"moduleResolution": "node",
-		"outDir": "dist",
+		"outDir": "out",
 		"removeComments": false,
 		"types": [
 			"@cloudflare/workers-types"
