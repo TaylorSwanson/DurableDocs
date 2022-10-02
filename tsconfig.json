@@ -14,7 +14,8 @@
 			"@cloudflare/workers-types"
 		],
 		"noImplicitAny": false,
-		"declaration": true
+		"declaration": true,
+		"sourceMap": true
 	},
 	"include": [
 		"src",
