@@ -20,13 +20,15 @@ export default class List {
    */
   constructor(
     doNamespace?: DurableObjectNamespace, 
-    doId?: DurableObjectId
+    id?: string
   ) {
-    this.id = doId?.toString();
-
     // DurableObject references
+    this.id = id;
     this.doNamespace = doNamespace;
-    if (doId && this.doNamespace) {
+
+    // Get stub if provided
+    if (this.id && this.doNamespace) {
+      const doId = this.doNamespace?.idFromString(this.id);
       this.doStub = this.doNamespace.get(doId);
     }
   }
@@ -46,15 +48,32 @@ export default class List {
 
     // Get the latest ids of the objects in this list
     const data = await getFromDO(this.doStub);
-    const items: string[] = data.items;
+    const items: string[] = data?.items ?? [];
 
     // Load the documents iteratively
-    for await (const item of items) {
-      const doId = this.doNamespace.idFromString(item);
+    for await (const id of items) {
+      const doId = this.doNamespace.idFromString(id);
       const document = new Document(this.doNamespace, doId);
 
       yield document.init();
     }
+  }
+
+  /**
+   * @returns Ids of the objects in this list
+   */
+  public async ids(): Promise<string[]> {
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+    if (!this.doStub) {
+      // This list is not created yet
+      return [];
+    }
+
+    // Get the latest ids of the objects in this list
+    const data = await getFromDO(this.doStub);
+    return data?.items ?? [];
   }
 
   /**

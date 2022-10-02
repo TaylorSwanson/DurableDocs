@@ -17,3 +17,10 @@ export async function getFromDO(
 
   return contentResponse.json();
 };
+
+export async function setDOContent(
+  doStub: DurableObjectStub,
+  content: { [key: string]: any }
+): Promise<any> {
+  // TODO
+}

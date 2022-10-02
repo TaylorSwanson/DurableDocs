@@ -12,22 +12,25 @@ platform.
 ![npm](https://img.shields.io/npm/v/durabledocs?style=flat-square)
 
 ```ts
-// Make docs
+// Make user
 const user = await docs.create({
-  username: "TaylorSwanson",
+  username: "ExampleUser123",
   website: "example.com",
   createdAt: new Date()
 })
+// Anonymous post
 const post = await docs.create({
   name: "Test post please ignore",
-  // Anonymous, no author;
+  // Anonymous, no author set;
   author: DurableDocs.ObjectId,
   replies: DurableDocs.List
 });
+// User replies to post
 const reply = await docs.create({
   content: "Replied to post",
   author: user
 });
+
 // Associate reply to post
 await post.refs.replies.add(reply);
 
@@ -36,6 +39,9 @@ const replies = await post.refs.replies.documents();
 const usernames = replies.map(async reply =>
   (await reply.author.data()).username
 );
+
+// usernames: ["ExampleUser123"]
+
 ```
 
 ## Installation

@@ -25,7 +25,7 @@ export default class Document {
   private initialized = false;
   // References to DO
   private doNamespace: DurableObjectNamespace;
-  private doStub: DurableObjectStub;
+  private doStub?: DurableObjectStub;
 
   /**
    * Document data currently stored in memory from the last init() call, may be
@@ -45,13 +45,11 @@ export default class Document {
 
   constructor(
     doNamespace: DurableObjectNamespace,
-    doId: DurableObjectId
+    id: string | DurableObjectId
   ) {
-    this.id = doId.toString();
-
     // DurableObject references
+    this.id = id.toString();
     this.doNamespace = doNamespace;
-    this.doStub = this.doNamespace.get(doId);
 
     // Initialization
     this.localdata = {};
@@ -59,7 +57,14 @@ export default class Document {
       listKeys: [],
       idKeys: []
     };
-    this.parents = new List(doNamespace);
+    // Empty list
+    this.parents = new List(this.doNamespace);
+
+    // Get stub if provided
+    if (this.id && this.doNamespace) {
+      const doId = this.doNamespace.idFromString(this.id);
+      this.doStub = this.doNamespace.get(doId);
+    }
   }
 
   /**
@@ -68,7 +73,6 @@ export default class Document {
    * direct usage and manipulation. E.g., adding an item to a List prop.
    */
   private buildRefs(): void {
-    
     // Clear any old refs
     this.refs = {} as PropChainItem;
 
@@ -85,7 +89,7 @@ export default class Document {
       path.forEach((p, idx) => {
         if (idx >= path.length - 1) {
           // We've reached the end of the chain
-          const listId = dataPath?.[p];
+          const listId: string = dataPath?.[p];
           refPath[p] = new List(this.doNamespace, listId);
 
           return;
@@ -114,8 +118,7 @@ export default class Document {
           const documentId: string = dataPath?.[p];
           if (!documentId) return;
 
-          const doId = this.doNamespace.idFromString(documentId);
-          refPath[p] = new Document(this.doNamespace, doId);
+          refPath[p] = new Document(this.doNamespace, documentId);
 
           return;
         }
@@ -130,22 +133,43 @@ export default class Document {
   }
 
   /**
+   * Replace all content in the document
+   * @param content Content to set at this document
+   */
+  async set(content: { [key: string]: any }) {
+    if (!this.doNamespace || !this.doStub) {
+      throw new Error("Cannot init Document that has no attached DO");
+    }
+
+    const toStore = structuredClone(content);
+    // TODO find types in content that might be Lists or Documents or ObjectIds
+
+
+
+    this.initialized = false;
+    return this.init();
+  }
+
+  /**
    * Load the Document's content from storage
    * @returns The populated Document object.
    */
   async init(): Promise<Document> {
+    if (!this.doNamespace || !this.doStub) {
+      throw new Error("Cannot init Document that has no attached DO");
+    }
     if (this.initialized) return this;
-    this.initialized = true;
     
     // Load full DO content
     const data = await getFromDO(this.doStub);
-    // Parse the data
+    // Store contents
     this.metadata = data.meta ?? {};
     this.localdata = data.data ?? {};
-
+    
     // Update public refs
     this.buildRefs();
-
+    this.initialized = true;
+    
     return this;
   }
 
@@ -158,6 +182,9 @@ export default class Document {
     if (!this.initialized) {
       await this.init();
     }
-    return structuredClone(this.localdata);
+    // TODO provide list contents on list props
+    const parsed = structuredClone(this.localdata);
+
+    return parsed;
   }
 }
