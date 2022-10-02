@@ -41,8 +41,8 @@ export class DurableDocs {
    */
   async create(objectData?: { [key: string]: any }): Promise<Document> {
     // TODO make new DO instance and then create the document for it
-    const newDOId = this.DONamespace.newUniqueId();
-    const document = new Document(newDOId, this.DONamespace);
+    const newDoId = this.DONamespace.newUniqueId();
+    const document = new Document(this.DONamespace, newDoId);
 
     return document.init();
   }
@@ -52,8 +52,8 @@ export class DurableDocs {
    * @returns The document at that id
    */
   async get(id: string): Promise<Document> {
-    const DOId = this.DONamespace.idFromString(id);
-    const document = new Document(DOId, this.DONamespace);
+    const doId = this.DONamespace.idFromString(id);
+    const document = new Document(this.DONamespace, doId,);
 
     return document.init();
   }

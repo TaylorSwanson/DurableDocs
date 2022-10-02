@@ -1,5 +1,10 @@
 
-# DurableDocs (Alpha)
+# DurableDocs (Work in Progress)
+## This package is not suitable for use at this time!
+
+**It is currently being extracted from a larger project to a standalone
+package.**
+
 DurableDocs is a document abstraction on top of CloudFlare's Durable Objects
 platform.
 
