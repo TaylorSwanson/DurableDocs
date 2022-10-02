@@ -35,7 +35,7 @@ export default class List {
    * Provides access to full data contents of the objects stored in the List.
    * @yields Every Document stored in this List
    */
-  public async *documents(): AsyncIterable<Promise<any>> {
+  public async *documents(): AsyncIterable<Document> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }

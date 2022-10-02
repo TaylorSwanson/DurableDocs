@@ -4,6 +4,7 @@
 import ObjectId from "./ObjectId";
 import Document from "./Document";
 import List from "./List";
+import Index from "./Index";
 
 export class DurableDocs {
   

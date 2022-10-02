@@ -13,17 +13,29 @@ platform.
 
 ```ts
 // Make docs
+const user = await docs.create({
+  username: "TaylorSwanson",
+  website: "example.com",
+  createdAt: new Date()
+})
 const post = await docs.create({
   name: "Test post please ignore",
+  // Anonymous, no author;
   author: DurableDocs.ObjectId,
   replies: DurableDocs.List
 });
 const reply = await docs.create({
   content: "Replied to post",
-  author: DurableDocs.ObjectId(existingUserId)
+  author: user
 });
 // Associate reply to post
 await post.refs.replies.add(reply);
+
+// Get username of each person who replied
+const replies = await post.refs.replies.documents();
+const usernames = replies.map(async reply =>
+  (await reply.author.data()).username
+);
 ```
 
 ## Installation
@@ -67,20 +79,33 @@ The `DurableDocData` class is exported from the main package. Re-export it in
 your worker's main entrypoint:
 ```ts
 // src/worker.ts
-
 import { DurableDocs, DurableDocData } from "durabledocs";
 
-// Cloudflare Worker
+type Env = {
+  DURABLE_DOC_DATA: DurableObjectNamespace,
+  DURABLE_DOC_KV: KVNamespace
+}
+
+// Worker entrypoint for development
 export default {
-  async fetch(request: Request, env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const docs = new DurableDocs(env.DURABLE_DOC_DATA, env.DURABLE_DOC_KV);
+    const newDoc = await docs.create({
+      name: "Document One",
+      numbers: 1234,
+      otherDoc: DurableDocs.ObjectId,
+      users: {
+        admins: DurableDocs.List,
+        members: DurableDocs.List
+      }
+    });
 
-    // Instantiate
-    const docs = new DurableDocs(env.DURABLE_DOC_DATA);
-
-    // ... application logic
-  },
-  DurableDocData
+    return new Response(null, { status: 200 });
+  }
 };
+
+// Export for wrangler
+export { DurableDocData };
 ```
 ```toml
 # wrangler.toml
@@ -90,6 +115,12 @@ compatibility_date = "2022-10-01"
 minify = true
 
 main = "./src/worker.ts"
+
+# Generate your own namespace called DURABLE_DOC_KV
+# https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler
+kv_namespaces = [
+  { binding = "DURABLE_DOC_KV", id = "<Your KV Namespace>" }
+]
 
 [durable_objects]
   bindings = [
