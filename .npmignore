@@ -1,6 +1,10 @@
-test
+
+#Development and config files only
+
+worker
 
 tsconfig.json
 build.sh
 start.sh
 wrangler.toml
+wrangler.toml.example

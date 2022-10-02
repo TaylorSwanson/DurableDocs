@@ -19,7 +19,7 @@
 	},
 	"include": [
 		"src",
-		"test"
+		"worker"
 	],
 	"exclude": [
 		"node_modules"

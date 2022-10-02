@@ -1,9 +1,11 @@
 
-// Simple container class to denote the type of value
-
 import Document from "./Document";
 import { getFromDO } from "./utils";
 
+/**
+ * A List behaves as a pointer to a collection of documents. Create a List when
+ * a single document key refers to multiple other documents.
+ */
 export default class List {
   // References for the DO
   private id?: string;
