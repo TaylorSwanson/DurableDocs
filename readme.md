@@ -57,15 +57,7 @@ Building large applications is possible with careful planning, not unlike any
 application that uses Durable Objects extensively.  Other Durable Objects and
 Workers that you write can interact with DurableDocs via its methods.
 
-
-# API
-## `DurableDocs`
-The constructor must be passed a reference to the `DurableObjectNamespace`
-corresponding with the `DurableDocData` class's binding in the Worker.
-
-## Static methods
-
-# Worker example
+# Configuration
 The `DurableDocData` class is exported from the main package. Re-export it in
 your worker's main entrypoint:
 ```ts
@@ -105,7 +97,6 @@ main = "./src/worker.ts"
 ```
 
 # General example
-
 Creating documents, adding them to other documents, and accessing values:
 ```ts
 // Typescript

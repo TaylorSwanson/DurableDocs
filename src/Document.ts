@@ -6,7 +6,7 @@ import List from "./List";
 import { getFromDO } from "./utils";
 
 // Recursive, allows chaining
-type PropChainItem = List | ObjectId | { [key: string]: PropChainItem }
+type PropChainItem = { [key: string]: PropChainItem } | List | ObjectId
 
 export default class Document {
   // Basic properties
@@ -17,7 +17,7 @@ export default class Document {
    * Chainable list of properties that provide access to the Document's
    * non-primitive types. Populated on init() and update().
    */
-  public refs: { [key: string]: PropChainItem } = {};
+  public refs: PropChainItem = {};
 
   /**
    * Flag for whether this instance has had its minimum content loaded
@@ -44,8 +44,8 @@ export default class Document {
   };
 
   constructor(
-    doId: DurableObjectId,
-    doNamespace: DurableObjectNamespace
+    doNamespace: DurableObjectNamespace,
+    doId: DurableObjectId
   ) {
     this.id = doId.toString();
 
@@ -68,12 +68,64 @@ export default class Document {
    * direct usage and manipulation. E.g., adding an item to a List prop.
    */
   private buildRefs(): void {
-    this.refs = {};
+    
+    // Clear any old refs
+    this.refs = {} as PropChainItem;
+
+    // Add Lists from ids
     this.metadata.listKeys.forEach(listKey => {
+      // Replicate structure defined by the path and put a list at the end
+      const path = listKey.split(".");
+      
+      // Do both at the same time:
+      // - Get the List id at the end of the path, if set
+      // - Build refs up to the List
+      let dataPath = this.localdata;
+      let refPath = this.refs;
+      path.forEach((p, idx) => {
+        if (idx >= path.length - 1) {
+          // We've reached the end of the chain
+          const listId = dataPath?.[p];
+          refPath[p] = new List(this.doNamespace, listId);
 
+          return;
+        }
+
+        // Create parent paths as needed
+        if (!refPath[p]) refPath[p] = {};
+        refPath = refPath[p];
+
+        dataPath = dataPath?.[p];
+      });
     });
+    // Add Documents from ids
     this.metadata.idKeys.forEach(idKey => {
+      // Replicate structure defined by the path and put a list at the end
+      const path = idKey.split(".");
+      
+      // Do both at the same time:
+      // - Get the document id at the end of the path, if set
+      // - Build refs up to the ObjectId
+      let dataPath = this.localdata;
+      let refPath = this.refs;
+      path.forEach((p, idx) => {
+        if (idx >= path.length - 1) {
+          // We've reached the end of the chain
+          const documentId: string = dataPath?.[p];
+          if (!documentId) return;
 
+          const doId = this.doNamespace.idFromString(documentId);
+          refPath[p] = new Document(this.doNamespace, doId);
+
+          return;
+        }
+
+        // Create parent paths as needed
+        if (!refPath[p]) refPath[p] = {};
+        refPath = refPath[p];
+  
+        dataPath = dataPath?.[p];
+      });
     });
   }
 

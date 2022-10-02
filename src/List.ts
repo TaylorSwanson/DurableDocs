@@ -14,18 +14,18 @@ export default class List {
    * Create a List instance which holds and interfaces with documents.
    * Providing no values to the constructor will create an empty list.
    * @param doNamespace Reference to the DurableDocumentData class
-   * @param id Id of existing List-type DO
+   * @param doId Id of existing List
    */
   constructor(
     doNamespace?: DurableObjectNamespace, 
-    id?: string
+    doId?: DurableObjectId
   ) {
-    this.doNamespace = doNamespace;
-    this.id = id;
+    this.id = doId?.toString();
 
-    if (doNamespace && id) {
-      const doId = doNamespace.idFromString(id);
-      this.doStub = doNamespace.get(doId);
+    // DurableObject references
+    this.doNamespace = doNamespace;
+    if (doId && this.doNamespace) {
+      this.doStub = this.doNamespace.get(doId);
     }
   }
 
@@ -49,7 +49,7 @@ export default class List {
     // Load the documents iteratively
     for await (const item of items) {
       const doId = this.doNamespace.idFromString(item);
-      const document = new Document(doId, this.doNamespace);
+      const document = new Document(this.doNamespace, doId);
 
       yield document.init();
     }
