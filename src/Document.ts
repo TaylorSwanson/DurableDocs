@@ -3,16 +3,37 @@
 
 import ObjectId from "./ObjectId";
 import List from "./List";
-import { deleteDO, getFromDO } from "./utils";
+import { deleteDO, getFromDO, setDOContent } from "./utils";
 
-// Recursive, allows chaining
-type PropChainItem = { [key: string]: PropChainItem } | List | ObjectId
+/**
+ * Used for ref type.
+ * Recursive, allows chaining, but the end of the chain will always be a class.
+ */
+type PropChainItem = { [key: string]: PropChainItem } | List | ObjectId;
+
+/**
+ * Returned when generating content on write
+ */
+type ContentRefDef = {
+  storeContent: { [key: string]: any },
+  refs: {
+    idKeys: string[],
+    listKeys: string[],
+  }
+};
 
 export default class Document {
-  // Basic properties
   public id: string;
-  // List of parents who own this object
+  
+  // References to DO
+  private doNamespace: DurableObjectNamespace;
+  private doStub?: DurableObjectStub;
+
+  /**
+   * List of parents who own this object
+   */
   public parents: List;
+
   /**
    * Chainable list of properties that provide access to the Document's
    * non-primitive types. Populated on init() and update().
@@ -20,12 +41,14 @@ export default class Document {
   public refs: PropChainItem = {};
 
   /**
-   * Flag for whether this instance has had its minimum content loaded
+   * Flag for whether this instance has had its minimum content loaded.
    */
   private initialized = false;
-  // References to DO
-  private doNamespace: DurableObjectNamespace;
-  private doStub?: DurableObjectStub;
+
+  /**
+   * Flag for whether parent tracking and orphan cleanup is enabled.
+   */
+  private trackParents = true;
 
   /**
    * Document data currently stored in memory from the last init() call, may be
@@ -45,7 +68,7 @@ export default class Document {
 
   constructor(
     doNamespace: DurableObjectNamespace,
-    id: string | DurableObjectId
+    id: string | DurableObjectId,
   ) {
     // DurableObject references
     this.id = id.toString();
@@ -133,7 +156,71 @@ export default class Document {
   }
 
   /**
-   * Replace all content in the document
+   * Find types in content that might be Lists or Documents or ObjectIds,
+   * then replace them with strings representing them. Also generate object
+   * that maps the key path to type for buildRefs() function on init.
+   * @param target Object to find classes in and mark down type paths.
+   * @param path Path in the parent object that this object is working in.
+   * @returns ContentRefDef type object, structured for easy parsing.
+   */
+  private placeTypesAndRefs(
+    target: { [key: string]: any },
+    path = ""
+  ): ContentRefDef {
+    const idKeys: string[] = [];
+    const listKeys: string[] = [];
+
+    // Don't create side-effects
+    let parseContent = structuredClone(target);
+
+    // Recurse into objects, convert objects to literals and map type paths
+    const keys = Object.keys(parseContent);
+    keys.forEach(key => {
+      // Generate dot notation to this path
+      const keyPath = [path, key].filter(p => p?.length).join(".");
+
+      if (typeof parseContent[key] === "object") {
+        if (parseContent[key] instanceof Date) {
+          parseContent[key] = Date.toString()
+        } else if (
+          parseContent[key] instanceof List ||
+          parseContent[key] instanceof Document ||
+          parseContent[key] instanceof ObjectId
+        ) {
+          // Write id of the instance, prevent [Object object] when stringified
+          // Write nulls to places where the object is not instantiated
+          parseContent[key] = parseContent[key].id ?? null;
+
+          // Store path to this class type in dot notation for later parsing
+          if (parseContent instanceof List) {
+            listKeys.push(keyPath);
+          } else {
+            idKeys.push(keyPath);
+          }
+        } else {
+          // Recurse into the 
+          const { storeContent, refs } = this.placeTypesAndRefs(parseContent, keyPath);
+          // Include those results into the larger result
+          idKeys.push(...refs.idKeys);
+          listKeys.push(...refs.listKeys);
+          // Merge in new values
+          parseContent[key] = storeContent;
+        }
+      }
+    });
+
+    return {
+      storeContent: parseContent,
+      refs: {
+        idKeys,
+        listKeys
+      }
+    };
+  };
+
+  /**
+   * Replace all content in this Document. Removess all keys that are not
+   * provided.
    * @param content Content to set at this document
    */
   async set(content: { [key: string]: any }) {
@@ -141,10 +228,10 @@ export default class Document {
       throw new Error("Cannot init Document that has no attached DO");
     }
 
-    const toStore = structuredClone(content);
-    // TODO find types in content that might be Lists or Documents or ObjectIds
+    const documentStoreContent = this.placeTypesAndRefs(content);
 
-
+    // TODO
+    await setDOContent(this.doStub, documentStoreContent);
 
     this.initialized = false;
     return this.init();
