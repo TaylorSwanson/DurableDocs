@@ -1,6 +1,10 @@
 
+// Extended iterators are not yet supported and are polyfilled
+// See https://www.npmjs.com/package/iterator-helper:
+import { aiter, HAsyncIterator } from "iterator-helper";
+
 import Document from "./Document";
-import { getFromDO, initializeDO, setDOContent } from "./utils";
+import { deleteDO, getFromDO, initializeDO, setDOContent, updateDOContent } from "./utils";
 
 /**
  * A List behaves as a pointer to a collection of documents. Create a List when
@@ -11,12 +15,17 @@ export default class List {
   private id?: string;
   private doNamespace?: DurableObjectNamespace;
   private doStub?: DurableObjectStub;
+  /**
+   * Lists can belong to only one Document at a time. A List must have a parent
+   * Document, they cannot be free-floating.
+   */
+  private parentDocumentId?: string;
 
   /**
    * Create a List instance which holds and interfaces with documents.
    * Providing no values to the constructor will create an empty list.
    * @param doNamespace Reference to the DurableDocumentData class
-   * @param doId Id of existing List
+   * @param id Id of existing List
    */
   constructor(
     doNamespace?: DurableObjectNamespace, 
@@ -54,26 +63,33 @@ export default class List {
    * Provides access to full data contents of the objects stored in the List.
    * @yields Every Document stored in this List
    */
-  public async *documents(): AsyncIterable<Document> {
+  public documents(): HAsyncIterator<Document> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
     if (!this.doStub) {
       // This list is not created yet
-      return [];
+      return new HAsyncIterator();
     }
 
-    // Get the latest ids of the objects in this list
-    const data = await getFromDO(this.doStub);
-    const items: string[] = data?.items ?? [];
+    // We'll generate the iterator in a closure to pass to the polyfill
+    const doNamespace = this.doNamespace;
+    const doStub = this.doStub;
+    const iter = (async function* genAsyncIterable(): AsyncIterable<Document> {
+      // Get the latest ids of the objects in this list
+      const data = await getFromDO(doStub);
+      const ids: string[] = data?.ids ?? [];
 
-    // Load the documents iteratively
-    for await (const id of items) {
-      const doId = this.doNamespace.idFromString(id);
-      const document = new Document(this.doNamespace, doId);
+      for await (const id of ids) {
+        const doId = doNamespace.idFromString(id);
+        const document = new Document(doNamespace, doId);
 
-      yield document.init();
-    }
+        yield document.init();
+      }
+    })();
+
+    // Extend the iterator to HAsyncIterator
+    return aiter(iter);
   }
 
   /**
@@ -90,54 +106,115 @@ export default class List {
 
     // Get the latest ids of the objects in this list
     const data = await getFromDO(this.doStub);
-    return data?.items ?? [];
+    return data?.ids ?? [];
   }
 
+  /**
+   * Remove an id from the list, does not delete any Documents.
+   * @param id Id to remove from the list.
+   */
+  public async unlistId(id: string): Promise<void> {
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+    // Don't create the doc if the list is empty anyway
+    if (!this.doStub) {
+      return;
+    }
+
+    // Replace contents of ids in the list with DO including the new list
+    const remainingIds = (await this.ids()).filter(id => id !== id);
+    await updateDOContent(this.doStub, {
+      ids: remainingIds
+    });
+  }
+
+  /**
+   * Inserts a document at the end of the list, will not insert duplicates.
+   * @param doc Document to add to the list.
+   * @returns The modified List.
+   */
   public async add(doc: Document): Promise<this> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
-    // Ensure doc exists
+    // Ensure list DO exists
     if (!this.doStub) {
       const newDoId = this.doNamespace.newUniqueId();
       this.doStub = this.doNamespace.get(newDoId);
       await initializeDO(this.doStub, "list");
     }
 
+    // TODO
+
     return this;
   }
 
   /**
    * Clear the list contents without removing any orphan documents created.
-   * @returns Number of documents cleared from the list
+   * @returns Number of documents cleared from the list.
    */
-  public async clear(): Promise<number> {
+  public async clear(): Promise<void> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
     // Don't create the doc if we're clearing it
     if (!this.doStub) {
-      return 0;
+      return;
     }
 
-    await setDOContent(this.doStub, []);
+    // Process documents in list, remove parent refs - keeping any orphans
+    await this.documents().forEach(async document => {
+      if (!this.parentDocumentId) return;
+      await document.parents.unlistId(this.parentDocumentId);
+    });
 
-    return 3;
+    await setDOContent(this.doStub, []);
   }
 
   /**
    * Clear the list contents, deleting documents that are orphaned as a result.
+   * Each document in the list will have its own lists deleted too, with those
+   * references being cleaned up and so on.
    * @returns Number of documents cleared from the list
    */
-  public async clearDelete(): Promise<number> {
+  public async clearDelete(): Promise<void> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
     // Don't create the doc if we're clearing it
     if (!this.doStub) {
-      return 0;
+      return;
+    }
+    
+    // Process documents in list, remove parent refs and delete orphans 
+    await this.documents().forEach(async document => {
+      // Remove parent reference for this List's parent
+
+      // Skip docs that have more than one reference
+      // If a doc has one reference, then it must be this List's parent
+      const refCount = await (await document.parents.ids()).length;
+      if (refCount > 1) {
+        if (!this.parentDocumentId) return;
+        await document.parents.unlistId(this.parentDocumentId);
+      } else {
+        // Don't bother updating the parent refs before deletion
+        await document.delete();
+      }
+    });
+  }
+
+  /**
+   * Delete the DO holding this List
+   */
+  public async delete(): Promise<void> {
+    if (!this.doNamespace) {
+      throw new Error("Cannot access List which posesses no namespace");
+    }
+    if (!this.doStub) {
+      return;
     }
 
-    return 3;
+    await deleteDO(this.doStub);
   }
 }

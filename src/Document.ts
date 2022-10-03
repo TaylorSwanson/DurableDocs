@@ -3,7 +3,7 @@
 
 import ObjectId from "./ObjectId";
 import List from "./List";
-import { getFromDO } from "./utils";
+import { deleteDO, getFromDO } from "./utils";
 
 // Recursive, allows chaining
 type PropChainItem = { [key: string]: PropChainItem } | List | ObjectId
@@ -186,5 +186,16 @@ export default class Document {
     const parsed = structuredClone(this.localdata);
 
     return parsed;
+  }
+
+  /**
+   * Delete the DO holding this Document
+   */
+  async delete(): Promise<void> {
+    if (!this.doNamespace || !this.doStub) {
+      throw new Error("Cannot delete Document that has no attached DO");
+    }
+    await this.parents.delete();
+    await deleteDO(this.doStub);
   }
 }
