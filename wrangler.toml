@@ -12,13 +12,13 @@ minify = true
 main = "./worker/index.ts"
 tsconfig = "./tsconfig.json"
 
-[dev]
-  port = 8088
-
 # This may not work in other development environments
 kv_namespaces = [
-  { binding = "DURABLE_DOC_KV", id = "b392d03c80b443bb89b00c85482a9976" }
+  { binding = "DURABLE_DOC_KV", id = "b392d03c80b443bb89b00c85482a9976", preview_id = "2f239bae7ecc4d6bb640aad24297f085" }
 ]
+
+[dev]
+  port = 8088
 
 # https://developers.cloudflare.com/workers/learning/using-durable-objects
 [durable_objects]

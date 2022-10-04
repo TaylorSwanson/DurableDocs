@@ -16,14 +16,15 @@ minify = true
 main = "./worker/index.ts"
 tsconfig = "./tsconfig.json"
 
-[dev]
-  port = 8088
-
 # Generate your own namespace called DURABLE_DOC_KV
 # https://developers.cloudflare.com/workers/wrangler/workers-kv/#create-a-kv-namespace-with-wrangler
-# kv_namespaces = [
-#   { binding = "DURABLE_DOC_KV", id = "b392d03c80b443bb89b00c85482a9976" }
-# ]
+# This may not work in other development environments
+#kv_namespaces = [
+#  { binding = "DURABLE_DOC_KV", id = "...", preview_id = "..." },
+#]
+
+[dev]
+  port = 8088
 
 # https://developers.cloudflare.com/workers/learning/using-durable-objects
 [durable_objects]
