@@ -130,11 +130,11 @@ export default class List {
   }
 
   /**
-   * Inserts a document at the end of the list, will not insert duplicates.
+   * Inserts a documet id at the end of the list, will not insert duplicates.
    * @param doc Document to add to the list.
    * @returns The modified List.
    */
-  public async add(doc: Document): Promise<this> {
+  public async addId(newId: string): Promise<void> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
@@ -145,9 +145,32 @@ export default class List {
       await initializeDO(this.doStub, "list");
     }
 
-    // TODO
+    const ids = await this.ids();
+    if (ids.includes(newId)) {
+      // Don't insert duplicates
+      return;
+    }
 
-    return this;
+    ids.push(newId);
+    await updateDOContent(this.doStub, {
+      ids
+    });
+  }
+
+  /**
+   * Inserts a document at the end of the list, will not insert duplicates, and
+   * will preserves references to parents.
+   * @param doc Document to add to the list.
+   * @returns The modified List.
+   */
+  public async addDoc(doc: Document): Promise<void> {
+
+    this.addId(doc.id);
+
+    // Reference this list owner as parent reference for the doc
+    if (this.parentDocumentId) {
+      doc.parents.addId(this.parentDocumentId);
+    }
   }
 
   /**
