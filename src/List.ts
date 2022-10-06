@@ -164,12 +164,11 @@ export default class List {
    * @returns The modified List.
    */
   public async addDoc(doc: Document): Promise<void> {
-
-    this.addId(doc.id);
+    await this.addId(doc.id);
 
     // Reference this list owner as parent reference for the doc
     if (this.parentDocumentId) {
-      doc.parents.addId(this.parentDocumentId);
+      await doc.parents.addId(this.parentDocumentId);
     }
   }
 
