@@ -37,10 +37,10 @@ export default {
       }
     });
 
-    let replyIds = newThread.refs.replies.documents().map(reply => reply.id);
+    let replyIds = newThread.refs.replies.cat.cat2.documents().map(reply => reply.id);
     console.log(`Before: newThread reply ids: ${replyIds}`);
 
-    await newThread.refs.replies.replies.addDoc(reply);
+    await newThread.refs.replies.addDoc(reply);
 
     replyIds = newThread.refs.replies.documents().map(reply => reply.id);
     console.log(`After: newThread reply ids: ${replyIds}`);
