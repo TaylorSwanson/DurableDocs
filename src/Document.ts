@@ -165,11 +165,13 @@ export default class Document {
    * @returns ContentRefDef type object, structured for easy parsing.
    */
   private placeTypesAndRefs(
-    target: { [key: string]: any },
+    target: { [key: string]: any } | undefined,
     path = ""
   ): ContentRefDef {
     const idKeys: string[] = [];
     const listKeys: string[] = [];
+
+    if (!target) target = {};
 
     // Don't create side-effects
     let parseContent = structuredClone(target);
@@ -224,7 +226,7 @@ export default class Document {
    * provided.
    * @param content Content to set at this document
    */
-  async set(content: { [key: string]: any }) {
+  async set(content: { [key: string]: any } | undefined) {
     if (!this.doNamespace || !this.doStub) {
       throw new Error("Cannot init Document that has no attached DO");
     }

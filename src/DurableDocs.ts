@@ -48,7 +48,7 @@ export class DurableDocs {
     const newDoId = this.doNamespace.newUniqueId();
     const document = new Document(this.doNamespace, newDoId);
 
-    return document.init();
+    return document.set(objectData);
   }
 
   /**
@@ -76,13 +76,34 @@ export class DurableDocData {
     this.env = env;
   }
 
+  private async getHandler(state, env, request: Request) {
+    const data = await state.storage.get("data");
+    return new Response(data ? JSON.stringify(data) : null);
+  }
+
+  private async putHandler(state, env, request: Request) {
+    const data = await request.json();
+    await state.storage.put("data", data);
+    return new Response(null, { status: 201 });
+  }
+
+  private async postHandler(state, env, request: Request) {
+    // TODO init here
+    return new Response(null, { status: 201 });
+  }
+
+  private async deleteHandler(state, env, request: Request) {
+    await state.storage.deleteAll();
+    return new Response(null, { status: 200 });
+  }
+
   async fetch(request: Request): Promise<Response> {
     // Choose a handler function depending on the request method
     const handlerResponse = ({
-      // "GET": getHandler,
-      // "POST": postHandler,
-      // "PATCH": patchHandler,
-      // "DELETE": deleteHandler
+      "GET": this.getHandler,
+      "PUT": this.putHandler,
+      "POST": this.postHandler,
+      "DELETE": this.deleteHandler
     })[request.method](this.state, this.env, request);
 
     return handlerResponse ?? new Response(null, { status: 405 });

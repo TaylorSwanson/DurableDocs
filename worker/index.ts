@@ -25,7 +25,7 @@ export default {
     })
     // Anonymous post
     const post = await docs.create({
-      name: "Test post please ignore",
+      name: "Test post",
       // Anonymous, no author set;
       author: docs.ObjectId(),
       replies: docs.List()
