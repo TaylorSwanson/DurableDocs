@@ -147,19 +147,19 @@ import { DurableDocs, DurableDocData } from "durabledocs";
 
 // All DurableDocs instances access the same data if passed the same namespace
 // env.DURABLE_DOC_DATA is of type DurableObjectNamespace
-const docs = new DurableDocs(env.DURABLE_DOC_DATA);
-
+const docs = new DurableDocs(env.DURABLE_DOC_DATA, env.DURABLE_DOC_KV);
+    
 const newThread = await docs.create({
   title: "Lorem Ipsum",
   content: "Consectetur adipiscing elit",
-  author: DurableDocs.ObjectId,             // Anonymous, not set
+  author: docs.ObjectId(),             // Anonymous, not set
   properties: {
     views: 0,
     isLocked: false,
     isStickied: false,
     createdAt: new Date()
-  }
-  replies: DurableDocs.List
+  },
+  replies: docs.List()
 });
 
 const reply = await docs.create({

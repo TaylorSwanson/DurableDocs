@@ -15,15 +15,35 @@ type Env = {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const docs = new DurableDocs(env.DURABLE_DOC_DATA, env.DURABLE_DOC_KV);
-    const newDoc = await docs.create({
-      name: "Document One",
-      numbers: 1234,
-      otherDoc: DurableDocs.ObjectId,
-      users: {
-        admins: DurableDocs.List,
-        members: DurableDocs.List
+    
+    const newThread = await docs.create({
+      title: "Lorem Ipsum",
+      content: "Consectetur adipiscing elit",
+      author: docs.ObjectId(),             // Anonymous, not set
+      properties: {
+        views: 0,
+        isLocked: false,
+        isStickied: false,
+        createdAt: new Date()
+      },
+      replies: docs.List()
+    });
+
+    const reply = await docs.create({
+      author: docs.ObjectId("111"),      // An existing user
+      content: "Morbi ullamcorper dapibus metus, sed porttitor diam feugiat nec.",
+      properties: {
+        createdAt: new Date()
       }
     });
+
+    let replyIds = newThread.refs.replies.documents().map(reply => reply.id);
+    console.log(`Before: newThread reply ids: ${replyIds}`);
+
+    await newThread.refs.replies.replies.addDoc(reply);
+
+    replyIds = newThread.refs.replies.documents().map(reply => reply.id);
+    console.log(`After: newThread reply ids: ${replyIds}`);
 
     return new Response(null, { status: 200 });
   }

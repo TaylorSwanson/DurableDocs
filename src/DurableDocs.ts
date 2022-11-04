@@ -4,7 +4,6 @@
 import ObjectId from "./ObjectId";
 import Document from "./Document";
 import List from "./List";
-import Index from "./Index";
 
 export class DurableDocs {
   
@@ -27,13 +26,19 @@ export class DurableDocs {
    * empty
    * @see ObjectId
    */
-  static ObjectId = new ObjectId();
+  ObjectId(id?: string): ObjectId {
+    if (!id) return new ObjectId();
+    return new ObjectId(id);
+  }
   /**
    * Placeholder reference for a list of documents in a new document, default
    * empty
    * @see List
    */
-  static List = new List();
+  List(id?: string): List {
+    if (!id) return new List();
+    return new List(this.doNamespace, id);
+  }
 
   /**
    * Create and save a new document
@@ -61,7 +66,6 @@ export class DurableDocs {
 
 /**
  * DurableObject class definition for DurableDocs database
- * 
  * This class should be referenced as a binding in your wrangler.toml file
  */
 export class DurableDocData {

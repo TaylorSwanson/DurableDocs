@@ -120,7 +120,7 @@ export default class Document {
 
         // Create parent paths as needed
         if (!refPath[p]) refPath[p] = {};
-        refPath = refPath[p];
+        refPath = refPath[p] as PropChainItem;
 
         dataPath = dataPath?.[p];
       });
@@ -148,7 +148,7 @@ export default class Document {
 
         // Create parent paths as needed
         if (!refPath[p]) refPath[p] = {};
-        refPath = refPath[p];
+        refPath = refPath[p] as PropChainItem;
   
         dataPath = dataPath?.[p];
       });

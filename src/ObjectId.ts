@@ -1,3 +1,4 @@
+import Document from "./Document";
 
 /**
  * An identifier that passes to and from DurableDocuments methods.
