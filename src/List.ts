@@ -109,6 +109,10 @@ export default class List {
     return data?.ids ?? [];
   }
 
+  public async size(): Promise<number> {
+    return (await this.ids()).length;
+  }
+
   /**
    * Remove an id from the list, does not delete any Documents.
    * @param id Id to remove from the list.

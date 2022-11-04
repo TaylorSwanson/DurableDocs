@@ -32,13 +32,13 @@ const reply = await docs.create({
 });
 
 // Associate reply to post
-await post.refs.replies.add(reply);
+await post.refs.replies.addDoc(reply);
 
 // Get username of each person who replied
-const replies = await post.refs.replies.documents();
-const usernames = replies.map(async reply =>
-  (await reply.author.data()).username
-);
+const usernames: string[] = [];
+for await (const reply of (post.refs.replies as List).documents()) {
+  usernames.push((await reply.refs.author.data()).username);
+}
 
 // usernames: ["ExampleUser123"]
 
@@ -169,15 +169,16 @@ const reply = await docs.create({
     createdAt: new Date()
   }
 });
-
-let replyIds = newThread.refs.replies.documents().map(reply => reply.id);
-console.log(`Before: newThread reply ids: ${ replyIds }`);
-
-await newThread.refs.replies.add(reply);
 // reply.id == "12345bca"
 
-replyIds = newThread.refs.replies.documents().map(reply => reply.id);
-console.log(`After: newThread reply ids: ${ replyIds }`);
+let replyIds = await (newThread.refs.replies as List).ids();
+console.log(`Before: newThread reply ids: ${replyIds}`);
+
+await newThread.refs.replies.addDoc(reply);
+
+replyIds = await (newThread.refs.replies as List).ids();
+console.log(`After: newThread reply ids: ${replyIds}`);
+
 ```
 
 Output:

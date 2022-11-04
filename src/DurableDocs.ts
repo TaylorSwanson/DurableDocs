@@ -6,7 +6,6 @@ import Document from "./Document";
 import List from "./List";
 
 export class DurableDocs {
-  
   /**
    * Durable Object class namespace - must be compatible with DurableDocs,
    * should refer to a DurableObject class provided by DurableDocs package.

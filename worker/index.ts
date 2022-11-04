@@ -4,7 +4,9 @@
  * locally for development and testing.
  */
 
+import Document from "../src/Document";
 import { DurableDocs, DurableDocData } from "../src/DurableDocs";
+import List from "../src/List";
 
 type Env = {
   DURABLE_DOC_DATA: DurableObjectNamespace,
@@ -15,35 +17,37 @@ type Env = {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const docs = new DurableDocs(env.DURABLE_DOC_DATA, env.DURABLE_DOC_KV);
-    
-    const newThread = await docs.create({
-      title: "Lorem Ipsum",
-      content: "Consectetur adipiscing elit",
-      author: docs.ObjectId(),             // Anonymous, not set
-      properties: {
-        views: 0,
-        isLocked: false,
-        isStickied: false,
-        createdAt: new Date()
-      },
+
+    const user = await docs.create({
+      username: "ExampleUser123",
+      website: "example.com",
+      createdAt: new Date()
+    })
+    // Anonymous post
+    const post = await docs.create({
+      name: "Test post please ignore",
+      // Anonymous, no author set;
+      author: docs.ObjectId(),
       replies: docs.List()
     });
-
+    // User replies to post
     const reply = await docs.create({
-      author: docs.ObjectId("111"),      // An existing user
-      content: "Morbi ullamcorper dapibus metus, sed porttitor diam feugiat nec.",
-      properties: {
-        createdAt: new Date()
-      }
+      content: "Replied to post",
+      author: user
     });
 
-    let replyIds = newThread.refs.replies.cat.cat2.documents().map(reply => reply.id);
-    console.log(`Before: newThread reply ids: ${replyIds}`);
+    console.log("[1] Number of replies: ", (post.refs.replies as List).size());
 
-    await newThread.refs.replies.addDoc(reply);
+    // Associate reply to post
+    await (post.refs.replies as List).addDoc(reply);
 
-    replyIds = newThread.refs.replies.documents().map(reply => reply.id);
-    console.log(`After: newThread reply ids: ${replyIds}`);
+    console.log("[2] Number of replies: ", (post.refs.replies as List).size());
+
+    // Get username of each person who replied
+    const usernames: string[] = [];
+    for await (const reply of (post.refs.replies as List).documents()) {
+      usernames.push((await reply.refs.author.data()).username);
+    }
 
     return new Response(null, { status: 200 });
   }

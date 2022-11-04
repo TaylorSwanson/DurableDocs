@@ -9,12 +9,8 @@ import { deleteDO, getFromDO, setDOContent } from "./utils";
  * Used for ref type.
  * Recursive, allows chaining, but the end of the chain will always be a class.
  */
-// type PropChain = { [key: string]: PropChain | List | ObjectId };
-
-type ChainItem = {
-  [key: string]: List | ObjectId;
-}
-type PropChain = { [key: string]: PropChain | ChainItem };
+// type ChainItem = { [key: string]: ChainItem | List | ObjectId };
+type ChainItem = { [key: string]: any };
 
 /**
  * Returned when generating content on write
@@ -43,7 +39,7 @@ export default class Document {
    * Chainable list of properties that provide access to the Document's
    * non-primitive types. Populated on init() and update().
    */
-  public refs: PropChain = {};
+  public refs: ChainItem = {};
 
   /**
    * Flag for whether this instance has had its minimum content loaded.
@@ -102,7 +98,7 @@ export default class Document {
    */
   private buildRefs(): void {
     // Clear any old refs
-    this.refs = {} as PropChain;
+    this.refs = {} as ChainItem;
 
     // Add Lists from ids
     this.metadata.listKeys.forEach(listKey => {
@@ -125,7 +121,7 @@ export default class Document {
 
         // Create parent paths as needed
         if (!refPath[p]) refPath[p] = {};
-        refPath = refPath[p] as PropChain;
+        refPath = refPath[p] as ChainItem;
 
         dataPath = dataPath?.[p];
       });
@@ -153,7 +149,7 @@ export default class Document {
 
         // Create parent paths as needed
         if (!refPath[p]) refPath[p] = {};
-        refPath = refPath[p] as PropChain;
+        refPath = refPath[p] as ChainItem;
   
         dataPath = dataPath?.[p];
       });
