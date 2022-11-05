@@ -84,7 +84,7 @@ export default class List {
         const doId = doNamespace.idFromString(id);
         const document = new Document(doNamespace, doId);
 
-        yield document.init();
+        yield document.load();
       }
     })();
 

@@ -4,7 +4,6 @@
  * locally for development and testing.
  */
 
-import Document from "../src/Document";
 import { DurableDocs, DurableDocData } from "../src/DurableDocs";
 import List from "../src/List";
 

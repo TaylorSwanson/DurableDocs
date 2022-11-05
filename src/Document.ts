@@ -3,7 +3,7 @@
 
 import ObjectId from "./ObjectId";
 import List from "./List";
-import { deleteDO, getFromDO, setDOContent } from "./utils";
+import { deleteDO, getFromDO, initializeDO, setDOContent } from "./utils";
 
 /**
  * Used for ref type.
@@ -69,7 +69,7 @@ export default class Document {
 
   constructor(
     doNamespace: DurableObjectNamespace,
-    id: string | DurableObjectId,
+    id: string | DurableObjectId
   ) {
     // DurableObject references
     this.id = id.toString();
@@ -93,7 +93,7 @@ export default class Document {
 
   /**
    * Turns local meta prop into local refs object that can be accessed publicly.
-   * Refs refers to an object's embedded classess that can be accessed for
+   * Refs prop refers to an object's embedded classess that can be accessed for
    * direct usage and manipulation. E.g., adding an item to a List prop.
    */
   private buildRefs(): void {
@@ -171,8 +171,6 @@ export default class Document {
     const idKeys: string[] = [];
     const listKeys: string[] = [];
 
-    if (!target) target = {};
-
     // Don't create side-effects
     let parseContent = structuredClone(target);
 
@@ -227,25 +225,37 @@ export default class Document {
    * provided.
    * @param content Content to set at this document
    */
-  async set(content: { [key: string]: any }) {
+  async set(content: { [key: string]: any }): Promise<Document> {
     if (!this.doNamespace || !this.doStub) {
       throw new Error("Cannot init Document that has no attached DO");
     }
 
     const documentStoreContent = this.placeTypesAndRefs(content);
-
-    // TODO
     await setDOContent(this.doStub, documentStoreContent);
 
     this.initialized = false;
-    return this.init();
+    return this.load();
+  }
+
+  async init(content?: { [key: string]: any }): Promise<Document> {
+    if (!this.doNamespace || !this.doStub) {
+      throw new Error("Cannot init Document that has no attached DO");
+    }
+
+    if (!content) content = {};
+
+    const documentStoreContent = this.placeTypesAndRefs(content);
+    await initializeDO(this.doStub, "document", documentStoreContent);
+
+    this.initialized = false;
+    return this.load();
   }
 
   /**
    * Load the Document's content from storage
    * @returns The populated Document object.
    */
-  async init(): Promise<Document> {
+  async load(): Promise<Document> {
     if (!this.doNamespace || !this.doStub) {
       throw new Error("Cannot init Document that has no attached DO");
     }
@@ -271,7 +281,7 @@ export default class Document {
    */
   async data(): Promise<{ [key: string]: any }> {
     if (!this.initialized) {
-      await this.init();
+      await this.load();
     }
     // TODO provide list contents on list props
     const parsed = structuredClone(this.localdata);

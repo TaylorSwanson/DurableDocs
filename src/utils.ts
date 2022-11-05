@@ -66,7 +66,7 @@ export async function updateDOContent(
  */
 export async function initializeDO(
   doStub: DurableObjectStub,
-  type: string,
+  type: "list" | "document",
   payload?: { [key: string]: any }
 ): Promise<Response> {
   const body = JSON.stringify({

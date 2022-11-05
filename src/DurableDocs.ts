@@ -61,7 +61,7 @@ export class DurableDocs {
     const doId = this.doNamespace.idFromString(id);
     const document = new Document(this.doNamespace, doId);
 
-    return document.init();
+    return document.load();
   }
 }
 
@@ -80,7 +80,25 @@ export class DurableDocData {
 
   private async postHandler(state: DurableObjectState, env, request: Request) {
     // Initialize this storage object
-    await state.storage.put("createdAt", new Date());
+    const data = await request.json() as { 
+      type: "list" | "document",
+      payload: { [key: string]: any }
+    };
+
+    if (!["list", "document"].includes(data.type)) {
+      return new Response(null, { status: 400 });
+    }
+
+    const exists = await state.storage.get("type") as string | undefined;
+    if (exists) {
+      return new Response(null, { status: 409 });
+    }
+
+    await state.storage.put("type", data.type);
+    if (data.payload) {
+      await state.storage.put("data", data.payload);
+    }
+
     return new Response(null, { status: 201 });
   }
 
