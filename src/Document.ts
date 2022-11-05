@@ -101,7 +101,7 @@ export default class Document {
     this.refs = {} as ChainItem;
 
     // Add Lists from ids
-    this.metadata.listKeys.forEach(listKey => {
+    this.metadata?.listKeys?.forEach(listKey => {
       // Replicate structure defined by the path and put a list at the end
       const path = listKey.split(".");
       
@@ -127,7 +127,7 @@ export default class Document {
       });
     });
     // Add Documents from ids
-    this.metadata.idKeys.forEach(idKey => {
+    this.metadata?.idKeys?.forEach(idKey => {
       // Replicate structure defined by the path and put a list at the end
       const path = idKey.split(".");
       
@@ -165,7 +165,7 @@ export default class Document {
    * @returns ContentRefDef type object, structured for easy parsing.
    */
   private placeTypesAndRefs(
-    target: { [key: string]: any } | undefined,
+    target: { [key: string]: any },
     path = ""
   ): ContentRefDef {
     const idKeys: string[] = [];
@@ -186,6 +186,7 @@ export default class Document {
         if (parseContent[key] instanceof Date) {
           parseContent[key] = Date.toString()
         } else if (
+          // Check if these are custom DurableDocs classes
           parseContent[key] instanceof List ||
           parseContent[key] instanceof Document ||
           parseContent[key] instanceof ObjectId
@@ -201,8 +202,8 @@ export default class Document {
             idKeys.push(keyPath);
           }
         } else {
-          // Recurse into the 
-          const { storeContent, refs } = this.placeTypesAndRefs(parseContent, keyPath);
+          // Recurse into the object at this key
+          const { storeContent, refs } = this.placeTypesAndRefs(parseContent[key], keyPath);
           // Include those results into the larger result
           idKeys.push(...refs.idKeys);
           listKeys.push(...refs.listKeys);
@@ -226,7 +227,7 @@ export default class Document {
    * provided.
    * @param content Content to set at this document
    */
-  async set(content: { [key: string]: any } | undefined) {
+  async set(content: { [key: string]: any }) {
     if (!this.doNamespace || !this.doStub) {
       throw new Error("Cannot init Document that has no attached DO");
     }
