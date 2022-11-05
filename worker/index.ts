@@ -6,6 +6,7 @@
 
 import { DurableDocs, DurableDocData } from "../src/DurableDocs";
 import List from "../src/List";
+import ObjectId from "../src/ObjectId";
 
 type Env = {
   DURABLE_DOC_DATA: DurableObjectNamespace,
@@ -26,14 +27,18 @@ export default {
     const post = await docs.create({
       name: "Test post",
       // Anonymous, no author set;
-      author: docs.ObjectId(),
-      replies: docs.List()
+      author: new ObjectId(),
+      replies: new List()
     });
     // User replies to post
     const reply = await docs.create({
       content: "Replied to post",
       author: user
     });
+
+    console.log("i", post);
+    console.log("r", post.refs);
+    console.log("m", post.metadata);
 
     console.log("[1] Number of replies: ", (post.refs.replies as List).size());
 

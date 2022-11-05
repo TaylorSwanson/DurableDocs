@@ -25,19 +25,19 @@ export class DurableDocs {
    * empty
    * @see ObjectId
    */
-  ObjectId(id?: string): ObjectId {
-    if (!id) return new ObjectId();
-    return new ObjectId(id);
-  }
+  // ObjectId(id?: string): ObjectId {
+  //   if (!id) return new ObjectId();
+  //   return new ObjectId(id);
+  // }
   /**
    * Placeholder reference for a list of documents in a new document, default
    * empty
    * @see List
    */
-  List(id?: string): List {
-    if (!id) return new List();
-    return new List(this.doNamespace, id);
-  }
+  // List(id?: string): List {
+  //   if (!id) return new List();
+  //   return new List(this.doNamespace, id);
+  // }
 
   /**
    * Create and save a new document
@@ -50,7 +50,7 @@ export class DurableDocs {
     const newDoId = this.doNamespace.newUniqueId();
     const document = new Document(this.doNamespace, newDoId);
 
-    return document.set(objectData);
+    return document.init(objectData);
   }
 
   /**
@@ -80,22 +80,23 @@ export class DurableDocData {
 
   private async postHandler(state: DurableObjectState, env, request: Request) {
     // Initialize this storage object
-    const data = await request.json() as { 
+    const data = (await request.json()) as { 
       type: "list" | "document",
       payload: { [key: string]: any }
     };
 
     if (!["list", "document"].includes(data.type)) {
-      return new Response(null, { status: 400 });
+      throw new Error(`DurableDocs instance must be type "list" or "document"`)
     }
 
     const exists = await state.storage.get("type") as string | undefined;
     if (exists) {
-      return new Response(null, { status: 409 });
+      throw new Error(`DurableDocs instance exists already`);
     }
 
     await state.storage.put("type", data.type);
     if (data.payload) {
+      console.log("payload", data.payload);
       await state.storage.put("data", data.payload);
     }
 

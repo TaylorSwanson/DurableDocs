@@ -16,7 +16,7 @@ type ChainItem = { [key: string]: any };
  * Returned when generating content on write
  */
 type ContentRefDef = {
-  storeContent: { [key: string]: any },
+  data: { [key: string]: any },
   refs: {
     idKeys: string[],
     listKeys: string[],
@@ -61,7 +61,7 @@ export default class Document {
    * In-memory metadata associated with localdata, loaded from last init() call,
    * may be stale but will be in sync with localdata.
    */
-  private metadata: {
+  public metadata: {
     // Dot-notation strings pointing to which keys are of which type, if any
     listKeys: string[],
     idKeys: string[]
@@ -179,7 +179,7 @@ export default class Document {
     keys.forEach(key => {
       // Generate dot notation to this path
       const keyPath = [path, key].filter(p => p?.length).join(".");
-
+      // console.log("t", key, typeof parseContent[key], parseContent[key] instanceof ObjectId);
       if (typeof parseContent[key] === "object") {
         if (parseContent[key] instanceof Date) {
           parseContent[key] = Date.toString()
@@ -189,8 +189,9 @@ export default class Document {
           parseContent[key] instanceof Document ||
           parseContent[key] instanceof ObjectId
         ) {
+          console.log("pck", parseContent[key])
           // Write id of the instance, prevent [Object object] when stringified
-          // Write nulls to places where the object is not instantiated
+          // Write nulls to places where the object is not instantiated yet
           parseContent[key] = parseContent[key].id ?? null;
 
           // Store path to this class type in dot notation for later parsing
@@ -201,18 +202,20 @@ export default class Document {
           }
         } else {
           // Recurse into the object at this key
-          const { storeContent, refs } = this.placeTypesAndRefs(parseContent[key], keyPath);
+          const { data, refs } = this.placeTypesAndRefs(parseContent[key], keyPath);
           // Include those results into the larger result
           idKeys.push(...refs.idKeys);
           listKeys.push(...refs.listKeys);
           // Merge in new values
-          parseContent[key] = storeContent;
+          parseContent[key] = data;
         }
       }
     });
 
+    console.log("id,list", idKeys, listKeys);
+
     return {
-      storeContent: parseContent,
+      data: parseContent,
       refs: {
         idKeys,
         listKeys
@@ -230,8 +233,8 @@ export default class Document {
       throw new Error("Cannot init Document that has no attached DO");
     }
 
-    const documentStoreContent = this.placeTypesAndRefs(content);
-    await setDOContent(this.doStub, documentStoreContent);
+    const setData = this.placeTypesAndRefs(content);
+    await setDOContent(this.doStub, setData);
 
     this.initialized = false;
     return this.load();
@@ -244,8 +247,8 @@ export default class Document {
 
     if (!content) content = {};
 
-    const documentStoreContent = this.placeTypesAndRefs(content);
-    await initializeDO(this.doStub, "document", documentStoreContent);
+    const setData = this.placeTypesAndRefs(content);
+    await initializeDO(this.doStub, "document", setData);
 
     this.initialized = false;
     return this.load();
