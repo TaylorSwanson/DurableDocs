@@ -171,51 +171,46 @@ export default class Document {
     const idKeys: string[] = [];
     const listKeys: string[] = [];
 
-    // Don't create side-effects
-    let parseContent = structuredClone(target);
+    let output: { [key: string]: any} = {};
 
     // Recurse into objects, convert objects to literals and map type paths
-    const keys = Object.keys(parseContent);
+    const keys = Object.keys(target);
     keys.forEach(key => {
       // Generate dot notation to this path
       const keyPath = [path, key].filter(p => p?.length).join(".");
-      // console.log("t", key, typeof parseContent[key], parseContent[key] instanceof ObjectId);
-      if (typeof parseContent[key] === "object") {
-        if (parseContent[key] instanceof Date) {
-          parseContent[key] = Date.toString()
+      if (typeof target[key] === "object") {
+        if (target[key] instanceof Date) {
+          output[key] = target[key].toString()
         } else if (
           // Check if these are custom DurableDocs classes
-          parseContent[key] instanceof List ||
-          parseContent[key] instanceof Document ||
-          parseContent[key] instanceof ObjectId
+          target[key] instanceof List ||
+          target[key] instanceof Document ||
+          target[key] instanceof ObjectId
         ) {
-          console.log("pck", parseContent[key])
           // Write id of the instance, prevent [Object object] when stringified
           // Write nulls to places where the object is not instantiated yet
-          parseContent[key] = parseContent[key].id ?? null;
+          output[key] = target[key].id ?? null;
 
           // Store path to this class type in dot notation for later parsing
-          if (parseContent instanceof List) {
+          if (target[key] instanceof List) {
             listKeys.push(keyPath);
-          } else {
+          } else if (target) {
             idKeys.push(keyPath);
           }
         } else {
           // Recurse into the object at this key
-          const { data, refs } = this.placeTypesAndRefs(parseContent[key], keyPath);
+          const { data, refs } = this.placeTypesAndRefs(target[key], keyPath);
           // Include those results into the larger result
           idKeys.push(...refs.idKeys);
           listKeys.push(...refs.listKeys);
           // Merge in new values
-          parseContent[key] = data;
+          output[key] = data;
         }
       }
     });
 
-    console.log("id,list", idKeys, listKeys);
-
     return {
-      data: parseContent,
+      data: output,
       refs: {
         idKeys,
         listKeys
@@ -249,6 +244,8 @@ export default class Document {
 
     const setData = this.placeTypesAndRefs(content);
     await initializeDO(this.doStub, "document", setData);
+
+    console.log("set", setData);
 
     this.initialized = false;
     return this.load();

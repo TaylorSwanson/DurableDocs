@@ -1,9 +1,7 @@
 
 // Main entrypoint for store
 
-import ObjectId from "./ObjectId";
 import Document from "./Document";
-import List from "./List";
 
 export class DurableDocs {
   /**
@@ -96,7 +94,6 @@ export class DurableDocData {
 
     await state.storage.put("type", data.type);
     if (data.payload) {
-      console.log("payload", data.payload);
       await state.storage.put("data", data.payload);
     }
 
