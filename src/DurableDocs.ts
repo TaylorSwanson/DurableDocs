@@ -131,7 +131,7 @@ export class DurableDocData {
     const storedData = await state.storage.get("data") as any;
 
     // Merge the data from the request on top of the stored data
-    const mergedData = mergeDeep(storedData, data);
+    const mergedData = mergeDeep(storedData ?? {}, data);
 
     await state.storage.put("data", mergedData);
 
@@ -140,7 +140,7 @@ export class DurableDocData {
 
   private async getHandler(state: DurableObjectState, env, request: Request) {
     const data = await state.storage.get("data");
-    return new Response(data ? JSON.stringify(data) : null);
+    return new Response(data ? JSON.stringify(data) : "{}");
   }
 
   private async putHandler(state: DurableObjectState, env, request: Request) {

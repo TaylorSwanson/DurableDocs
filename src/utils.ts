@@ -10,7 +10,9 @@ export async function getFromDO(
   pathname?: string
 ): Promise<{ [key: string]: any }> {
   const requestURL = `https://dodb${pathname ? pathname : "/"}`;
-  const req = new Request(requestURL);
+  const req = new Request(requestURL, {
+    method: "GET"
+  });
   const res = await doStub.fetch(req);
 
   return res.json();
