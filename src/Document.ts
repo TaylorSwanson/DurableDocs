@@ -128,7 +128,6 @@ export default class Document {
     });
     // Add Documents from ids
     this.metadata?.idKeys?.forEach(idKey => {
-      console.log("idKey", idKey);
       // Replicate structure defined by the path and put a Document at the end
       const path = idKey.split(".");
       
@@ -181,7 +180,7 @@ export default class Document {
       const keyPath = [path, key].filter(p => p?.length).join(".");
       if (typeof target[key] === "object") {
         if (target[key] instanceof Date) {
-          output[key] = target[key].toString()
+          output[key] = target[key].toString();
         } else if (
           // Check if these are custom DurableDocs classes
           target[key] instanceof List ||
@@ -207,6 +206,8 @@ export default class Document {
           // Merge in new values
           output[key] = data;
         }
+      } else {
+        output[key] = target[key];
       }
     });
 
@@ -246,8 +247,6 @@ export default class Document {
     const setData = this.placeTypesAndRefs(content);
     await initializeDO(this.doStub, "document", setData);
 
-    console.log("set", setData);
-
     this.initialized = false;
     return this.load();
   }
@@ -284,10 +283,7 @@ export default class Document {
     if (!this.initialized) {
       await this.load();
     }
-    // TODO provide list contents on list props
-    const parsed = structuredClone(this.localdata);
-
-    return parsed;
+    return structuredClone(this.localdata);
   }
 
   /**

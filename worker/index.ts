@@ -49,6 +49,8 @@ export default {
       usernames.push((await reply.refs.author.data()).username);
     }
 
+    console.log("[3] Usernames: ", usernames);
+
     return new Response(null, { status: 200 });
   }
 };
