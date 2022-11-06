@@ -3,6 +3,32 @@
 
 import Document from "./Document";
 
+function isObject(item) {
+  return (item && typeof item === "object" && !Array.isArray(item));
+}
+
+function mergeDeep(target, ...sources) {
+  if (!sources.length) return target;
+  const source = sources.shift();
+  
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, {
+          [key]: {}
+        });
+        mergeDeep(target[key], source[key]);
+      } else {
+        Object.assign(target, {
+          [key]: source[key]
+        });
+      }
+    }
+  }
+  
+  return mergeDeep(target, ...sources);
+}
+
 export class DurableDocs {
   /**
    * Durable Object class namespace - must be compatible with DurableDocs,
@@ -100,6 +126,18 @@ export class DurableDocData {
     return new Response(null, { status: 201 });
   }
 
+  private async patchHandler(state: DurableObjectState, env, request: Request) {
+    const data = await request.json() as any;
+    const storedData = await state.storage.get("data") as any;
+
+    // Merge the data from the request on top of the stored data
+    const mergedData = mergeDeep(storedData, data);
+
+    await state.storage.put("data", mergedData);
+
+    return new Response(null, { status: 200 });
+  }
+
   private async getHandler(state: DurableObjectState, env, request: Request) {
     const data = await state.storage.get("data");
     return new Response(data ? JSON.stringify(data) : null);
@@ -120,6 +158,7 @@ export class DurableDocData {
     // Choose a handler function depending on the request method
     const handlerResponse = ({
       "POST": this.postHandler,
+      "PATCH": this.patchHandler,
       "GET": this.getHandler,
       "PUT": this.putHandler,
       "DELETE": this.deleteHandler

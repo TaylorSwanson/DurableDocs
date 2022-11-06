@@ -36,16 +36,12 @@ export default {
       author: user
     });
 
-    console.log("i", post);
-    console.log("r", post.refs);
-    console.log("m", post.metadata);
-
-    console.log("[1] Number of replies: ", (post.refs.replies as List).size());
+    console.log("[1] Number of replies: ", await (post.refs.replies as List).size());
 
     // Associate reply to post
     await (post.refs.replies as List).addDoc(reply);
 
-    console.log("[2] Number of replies: ", (post.refs.replies as List).size());
+    console.log("[2] Number of replies: ", await (post.refs.replies as List).size());
 
     // Get username of each person who replied
     const usernames: string[] = [];

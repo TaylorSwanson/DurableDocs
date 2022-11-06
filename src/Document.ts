@@ -128,11 +128,12 @@ export default class Document {
     });
     // Add Documents from ids
     this.metadata?.idKeys?.forEach(idKey => {
-      // Replicate structure defined by the path and put a list at the end
+      console.log("idKey", idKey);
+      // Replicate structure defined by the path and put a Document at the end
       const path = idKey.split(".");
       
       // Do both at the same time:
-      // - Get the document id at the end of the path, if set
+      // - Get the Document id at the end of the path, if set
       // - Build refs up to the ObjectId
       let dataPath = this.localdata;
       let refPath = this.refs;
@@ -264,7 +265,7 @@ export default class Document {
     // Load full DO content
     const data = await getFromDO(this.doStub);
     // Store contents
-    this.metadata = data.meta ?? {};
+    this.metadata = data.refs ?? {};
     this.localdata = data.data ?? {};
     
     // Update public refs
