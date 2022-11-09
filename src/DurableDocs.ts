@@ -114,8 +114,9 @@ export class DurableDocData {
       throw new Error(`DurableDocs instance must be type "list" or "document"`)
     }
 
-    const exists = await state.storage.get("type") as string | undefined;
+    const exists = await state.storage.get("initialized") as boolean;
     if (exists) {
+      // This is an implementation error - this init is handled by DurableDocs
       throw new Error(`DurableDocs instance exists already`);
     }
 
@@ -132,11 +133,8 @@ export class DurableDocData {
 
   private async patchHandler(state: DurableObjectState, env, request: Request) {
     const data = await request.json() as any;
-    
-    // const stored = await state.storage.get("data") as any;
-    const stored = await state.storage.get(["initialized", "type", "data"]);
 
-    // TODO change behavior depending on type
+    const stored = await state.storage.get(["initialized", "data"]);
 
     // Merge the data from the request on top of the stored data
     const mergedData = mergeDeep(stored.get("data") ?? {}, data);
@@ -150,9 +148,7 @@ export class DurableDocData {
   }
 
   private async getHandler(state: DurableObjectState, env, request: Request) {
-    const stored = await state.storage.get(["initialized", "type", "data"]);
-
-    // TODO change behavior depending on type
+    const stored = await state.storage.get(["initialized", "data"]);
 
     // Don't return data if the doc has never been created
     const initialized = stored.get("initialized");
@@ -166,8 +162,6 @@ export class DurableDocData {
 
   private async putHandler(state: DurableObjectState, env, request: Request) {
     const data = await request.json();
-
-    // TODO change behavior depending on type
 
     await state.storage.put({
       data,
