@@ -3,7 +3,7 @@
 
 import ObjectId from "./ObjectId";
 import List from "./List";
-import { deleteDO, getFromDO, initializeDO, setDOContent } from "./utils";
+import { deleteDO, getFromDO, initializeDO, setDOContent, updateDOContent } from "./utils";
 
 /**
  * Used for ref type.
@@ -237,6 +237,18 @@ export default class Document {
 
     const setData = this.placeTypesAndRefs(content);
     await setDOContent(this.doStub, setData);
+
+    this.initialized = false;
+    return this.load();
+  }
+  
+  async update(content: { [key: string]: any }): Promise<Document> {
+    if (!this.doNamespace || !this.doStub) {
+      throw new Error("Cannot init Document that has no attached DO");
+    }
+
+    const setData = this.placeTypesAndRefs(content);
+    await updateDOContent(this.doStub, setData);
 
     this.initialized = false;
     return this.load();
