@@ -37,11 +37,12 @@ export class DurableDocs {
    * @see DurableDocData
    */
   private doNamespace: DurableObjectNamespace;
-  private kvNamespace: KVNamespace;
+  // private kvNamespace: KVNamespace;
   
-  constructor(storeNamespace: DurableObjectNamespace, kvNamespace: KVNamespace) {
+  // constructor(storeNamespace: DurableObjectNamespace, kvNamespace: KVNamespace) {
+  constructor(storeNamespace: DurableObjectNamespace) {
     this.doNamespace = storeNamespace;
-    this.kvNamespace = kvNamespace;
+    // this.kvNamespace = kvNamespace;
   }
   
   /**
@@ -118,7 +119,10 @@ export class DurableDocData {
       throw new Error(`DurableDocs instance exists already`);
     }
 
-    await state.storage.put("type", data.type);
+    await state.storage.put({
+      type: data.type,
+      initialized: new Date()
+    });
     if (data.payload) {
       await state.storage.put("data", data.payload);
     }
@@ -139,7 +143,15 @@ export class DurableDocData {
   }
 
   private async getHandler(state: DurableObjectState, env, request: Request) {
-    const data = await state.storage.get("data");
+    const stored = await state.storage.get(["initialized", "data"]);
+
+    // Don't return data if the doc has never been created
+    const initialized = stored.get("initialized");
+    if (!initialized) {
+      return new Response(null, { status: 404 });
+    }
+
+    const data = stored.get("data");
     return new Response(data ? JSON.stringify(data) : "{}");
   }
 

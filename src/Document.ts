@@ -47,6 +47,11 @@ export default class Document {
   private initialized = false;
 
   /**
+   * Tracks whether the document is not initialized (has never created a DO)
+   */
+  private isNull = false;
+
+  /**
    * Flag for whether parent tracking and orphan cleanup is enabled.
    */
   private trackParents = true;
@@ -263,6 +268,14 @@ export default class Document {
     
     // Load full DO content
     const data = await getFromDO(this.doStub);
+
+    // Handle case where document was never initialized
+    if (!data) {
+      this.initialized = true;
+      this.isNull = true;
+      return this;
+    }
+
     // Store contents
     this.metadata = data.refs ?? {};
     this.localdata = data.data ?? {};
@@ -279,10 +292,15 @@ export default class Document {
    * not already initialized.
    * @returns Stored contents of the Document.
    */
-  async data(): Promise<{ [key: string]: any }> {
+  async data(): Promise<{ [key: string]: any } | null> {
     if (!this.initialized) {
       await this.load();
     }
+
+    if (this.isNull) {
+      return null;
+    }
+
     return structuredClone(this.localdata);
   }
 

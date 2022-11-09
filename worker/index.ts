@@ -9,14 +9,13 @@ import List from "../src/List";
 import ObjectId from "../src/ObjectId";
 
 type Env = {
-  DURABLE_DOC_DATA: DurableObjectNamespace,
-  DURABLE_DOC_KV: KVNamespace
+  DURABLE_DOC_DATA: DurableObjectNamespace
 }
 
 // Worker entrypoint for development
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const docs = new DurableDocs(env.DURABLE_DOC_DATA, env.DURABLE_DOC_KV);
+    const docs = new DurableDocs(env.DURABLE_DOC_DATA);
 
     const user = await docs.create({
       username: "ExampleUser123",
