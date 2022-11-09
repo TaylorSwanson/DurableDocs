@@ -14,7 +14,7 @@
     "prepublishOnly": "npm run build"
   },
   "author": "Taylor Swanson",
-  "license": "MPL-2.0",
+  "license": "MIT",
   "devDependencies": {
     "@cloudflare/workers-types": "^3.18.0",
     "typescript": "^4.8.4",
