@@ -121,7 +121,7 @@ export class DurableDocData {
 
     await state.storage.put({
       type: data.type,
-      initialized: new Date()
+      initialized: true
     });
     if (data.payload) {
       await state.storage.put("data", data.payload);
@@ -132,18 +132,27 @@ export class DurableDocData {
 
   private async patchHandler(state: DurableObjectState, env, request: Request) {
     const data = await request.json() as any;
-    const storedData = await state.storage.get("data") as any;
+    
+    // const stored = await state.storage.get("data") as any;
+    const stored = await state.storage.get(["initialized", "type", "data"]);
+
+    // TODO change behavior depending on type
 
     // Merge the data from the request on top of the stored data
-    const mergedData = mergeDeep(storedData ?? {}, data);
+    const mergedData = mergeDeep(stored.get("data") ?? {}, data);
 
-    await state.storage.put("data", mergedData);
+    await state.storage.put({
+      data: mergedData,
+      initialized: true
+    });
 
     return new Response(null, { status: 200 });
   }
 
   private async getHandler(state: DurableObjectState, env, request: Request) {
-    const stored = await state.storage.get(["initialized", "data"]);
+    const stored = await state.storage.get(["initialized", "type", "data"]);
+
+    // TODO change behavior depending on type
 
     // Don't return data if the doc has never been created
     const initialized = stored.get("initialized");
@@ -157,7 +166,13 @@ export class DurableDocData {
 
   private async putHandler(state: DurableObjectState, env, request: Request) {
     const data = await request.json();
-    await state.storage.put("data", data);
+
+    // TODO change behavior depending on type
+
+    await state.storage.put({
+      data,
+      initialized: true
+    });
     return new Response(null, { status: 201 });
   }
 
