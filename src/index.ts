@@ -1,15 +1,8 @@
 
-/**
- * An Index can be accessed far more quickly than a standard List, and is
- * suitable for fast access of items which are not added or removed frequently.
- */
-export default class Index {
+// Re-exports
 
-  private kvNamespace: KVNamespace;
-  private indexName: string;
+export { DurableDocData, DurableDocs } from "./DurableDocs";
+export { Document } from "./Document";
+export { List } from "./List";
+export { ObjectId } from "./ObjectId";
 
-  constructor(kvNamespace: KVNamespace, indexName: string) {
-    this.kvNamespace = kvNamespace;
-    this.indexName = indexName;
-  }
-};

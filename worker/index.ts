@@ -4,9 +4,8 @@
  * locally for development and testing.
  */
 
-import { DurableDocs, DurableDocData } from "../src/DurableDocs";
-import List from "../src/List";
-import ObjectId from "../src/ObjectId";
+import { List, ObjectId } from "../src";
+import { DurableDocData, DurableDocs } from "../src/DurableDocs";
 
 type Env = {
   DURABLE_DOC_DATA: DurableObjectNamespace

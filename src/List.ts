@@ -2,15 +2,15 @@
 // Extended iterators are not yet supported and are polyfilled
 // See https://www.npmjs.com/package/iterator-helper:
 import { aiter, HAsyncIterator } from "iterator-helper";
+import { Document } from ".";
 
-import Document from "./Document";
 import { deleteDO, getFromDO, initializeDO, setDOContent, updateDOContent } from "./utils";
 
 /**
  * A List behaves as a pointer to a collection of documents. Create a List when
  * a single document key refers to multiple other documents.
  */
-export default class List {
+export class List {
   // References for the DO
   private id?: string;
   private doNamespace?: DurableObjectNamespace;

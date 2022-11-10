@@ -1,7 +1,7 @@
 
 // Main entrypoint for store
 
-import Document from "./Document";
+import { Document } from ".";
 
 function isObject(item) {
   return (item && typeof item === "object" && !Array.isArray(item));
@@ -37,8 +37,7 @@ export class DurableDocs {
    * @see DurableDocData
    */
   private doNamespace: DurableObjectNamespace;
-  // private kvNamespace: KVNamespace;
-  
+
   // constructor(storeNamespace: DurableObjectNamespace, kvNamespace: KVNamespace) {
   constructor(storeNamespace: DurableObjectNamespace) {
     this.doNamespace = storeNamespace;
@@ -50,7 +49,7 @@ export class DurableDocs {
    * empty
    * @see ObjectId
    */
-  // ObjectId(id?: string): ObjectId {
+  // public ObjectId(id?: string): ObjectId {
   //   if (!id) return new ObjectId();
   //   return new ObjectId(id);
   // }
@@ -59,7 +58,7 @@ export class DurableDocs {
    * empty
    * @see List
    */
-  // List(id?: string): List {
+  // public List(id?: string): List {
   //   if (!id) return new List();
   //   return new List(this.doNamespace, id);
   // }

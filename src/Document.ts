@@ -1,9 +1,18 @@
 
 // Used to pass around references to DOs without loading data until needed
 
-import ObjectId from "./ObjectId";
-import List from "./List";
-import { deleteDO, getFromDO, initializeDO, setDOContent, updateDOContent } from "./utils";
+import {
+  List,
+  ObjectId
+} from ".";
+
+import { 
+  deleteDO,
+  getFromDO,
+  initializeDO,
+  setDOContent,
+  updateDOContent
+} from "./utils";
 
 /**
  * Used for ref type.
@@ -23,7 +32,7 @@ type ContentRefDef = {
   }
 };
 
-export default class Document {
+export class Document {
   public id: string;
   
   // References to DO
