@@ -71,7 +71,7 @@ export class DurableDocs {
    * empty
    * @see ObjectId
    */
-  public Document(): Promise<Document> {
+  public async Document(): Promise<Document> {
     const document = new Document(this.doNamespace);
     return document.init();
   }
@@ -80,7 +80,7 @@ export class DurableDocs {
    * empty
    * @see List
    */
-  public List(): Promise<List> {
+  public async List(): Promise<List> {
     const list = new List(this.doNamespace);
     return list.init();
   }
@@ -104,7 +104,6 @@ export class DurableDocs {
    * @returns The document at that id
    */
   async get(id: string): Promise<Document> {
-    const doId = this.doNamespace.idFromString(id);
     const document = new Document(this.doNamespace, id);
 
     return document.load();

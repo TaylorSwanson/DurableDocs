@@ -303,7 +303,7 @@ export class Document {
     this.localData = data.data ?? {};
     
     // Update public refs
-    this.buildRefs();
+    await this.buildRefs();
     
     return this;
   }
