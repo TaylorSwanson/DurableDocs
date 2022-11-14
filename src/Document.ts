@@ -30,7 +30,7 @@ type ContentRefDef = {
     idKeys: string[],
     listKeys: string[],
   },
-  parents?: List
+  parentListId?: string
 };
 
 export class Document {
@@ -278,12 +278,14 @@ export class Document {
     if (!content) content = {};
 
     const setData = this.prepareStoreData(content);
-    const parents = new List(this.doNamespace);
-    setData.parents = await parents.init();
+
+    const parentList = new List(this.doNamespace);
+    await parentList.init();
+    setData.parentListId = parentList.id;
     
     await initializeDO(this.doStub, "document", setData);
     
-    this.parentList = parents;
+    this.parentList = parentList;
     return this.load();
   }
 
@@ -305,9 +307,13 @@ export class Document {
       return this.init();
     }
 
-    // Store contents
+    // Stored contents
     this.metadata = data.refs ?? {};
     this.localData = data.data ?? {};
+
+    // Build list reference
+    const parentList = new List(this.doNamespace, data.parentListId);
+    this.parentList = await parentList.init();
     
     // Update public refs
     await this.buildRefs();
@@ -385,7 +391,13 @@ export class Document {
     await this.load();
 
     if (!this.parentList) {
-      throw new Error("Parent list for Document is not defined");
+      // Parent list was not set
+      // Create it now
+      const list = new List(this.doNamespace);
+      await this.update({
+        parents: await list.init()
+      });
+      this.parentList = list;
     }
 
     return this.parentList;

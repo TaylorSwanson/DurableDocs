@@ -12,7 +12,12 @@ import { deleteDO, getFromDO, initializeDO, setDOContent, updateDOContent } from
  */
 export class List {
   // References for the DO
-  private id: string;
+
+  /**
+   * DurableObject id of this List instance, not generally useful for most
+   * applications. Mostly used internaly.
+   */
+  public id: string;
   private doNamespace: DurableObjectNamespace;
   private doStub: DurableObjectStub;
   /**
