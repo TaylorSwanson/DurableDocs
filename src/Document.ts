@@ -123,16 +123,18 @@ export class Document {
       // - Build refs up to the List
       let dataPath = this.localData;
       let refPath = this.refs;
-      for (let i = 0; i < path.length; i++) {
-        const p = path[i];
-        if (i >= path.length - 1) {
+
+      for await (const p of path) {
+        const idx = path.indexOf(p);
+
+        if (idx >= path.length - 1) {
           // We've reached the end of the chain
           const listId: string = dataPath?.[p];
           const list = new List(this.doNamespace, listId);
 
           refPath[p] = await list.init();
 
-          return;
+          continue;
         }
 
         // Create parent paths as needed
@@ -143,7 +145,7 @@ export class Document {
       }
     }
     // Add Documents from ids
-    this.metadata?.idKeys?.forEach(idKey => {
+    for await (const idKey of this.metadata?.idKeys) {
       // Replicate structure defined by the path and put a Document at the end
       const path = idKey.split(".");
       
@@ -152,15 +154,20 @@ export class Document {
       // - Build refs up to the ObjectId
       let dataPath = this.localData;
       let refPath = this.refs;
-      path.forEach((p, idx) => {
+
+      for await (const p of path) {
+        const idx = path.indexOf(p);
+
         if (idx >= path.length - 1) {
           // We've reached the end of the chain
           const documentId: string = dataPath?.[p];
-          if (!documentId) return;
+          if (!documentId) continue;
 
-          refPath[p] = new Document(this.doNamespace, documentId);
+          const document = new Document(this.doNamespace, documentId);
 
-          return;
+          refPath[p] = await document.init();
+
+          continue;
         }
 
         // Create parent paths as needed
@@ -168,8 +175,8 @@ export class Document {
         refPath = refPath[p] as ChainItem;
   
         dataPath = dataPath?.[p];
-      });
-    });
+      }
+    };
   }
 
   /**
@@ -309,16 +316,62 @@ export class Document {
   }
 
   /**
-   * Access the content of the document, loads the document data to memory if
-   * not already initialized.
+   * Access the content of the document without expanding lists
    * @returns Stored contents of the Document.
+   */
+  async rawData(): Promise<{ [key: string]: any } | null> {    
+    await this.load();
+    if (Object.getOwnPropertyNames(this.localData).length === 0) {
+      return null;
+    }
+    return structuredClone(this.localData);
+  }
+
+  /**
+   * Access the content of the document
+   * @returns Stored contents of the Document with Lists converted to id arrays.
    */
   async data(): Promise<{ [key: string]: any } | null> {    
     await this.load();
     if (Object.getOwnPropertyNames(this.localData).length === 0) {
       return null;
     }
-    return structuredClone(this.localData);
+
+    const expandedData = structuredClone(this.localData);
+
+    // Convert List ids to array of entry ids
+    for await (const listKey of this.metadata?.listKeys) {
+      // Replicate structure defined by the path and put a list at the end
+      const path = listKey.split(".");
+
+      // Do both at the same time:
+      // - Get the List id at the end of the path, if set
+      // - Build refs up to the List
+      let dataPath = expandedData;
+      let refPath = expandedData;
+      for await (const p of path) {
+        const idx = path.indexOf(p);
+
+        if (idx >= path.length - 1) {
+          // We've reached the end of the chain
+          const listId: string = dataPath?.[p];
+          let list = new List(this.doNamespace, listId);
+          list = await list.init();
+
+          refPath[p] = await list.ids();
+
+          continue;
+        }
+
+        // Create parent paths as needed
+        if (!refPath[p]) refPath[p] = {};
+        refPath = refPath[p] as ChainItem;
+
+        dataPath = dataPath?.[p];
+      }
+    }
+
+    return expandedData;
   }
 
   /**
