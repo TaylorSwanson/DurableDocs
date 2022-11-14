@@ -1,33 +1,55 @@
 
 // Main entrypoint for store
 
-import { Document } from ".";
+import { Document, List } from ".";
 
 function isObject(item) {
   return (item && typeof item === "object" && !Array.isArray(item));
 }
 
-function mergeDeep(target, ...sources) {
-  if (!sources.length) return target;
-  const source = sources.shift();
-  
-  if (isObject(target) && isObject(source)) {
-    for (const key in source) {
-      if (isObject(source[key])) {
-        if (!target[key]) Object.assign(target, {
-          [key]: {}
-        });
-        mergeDeep(target[key], source[key]);
-      } else {
-        Object.assign(target, {
-          [key]: source[key]
-        });
-      }
+// https://gist.github.com/ahtcx/0cd94e62691f539160b32ecda18af3d6?permalink_comment_id=3571894#gistcomment-3571894
+function mergeDeep(target, source, isMergingArrays = true) {
+  target = ((obj) => {
+    let cloneObj;
+    try {
+      cloneObj = JSON.parse(JSON.stringify(obj));
+    } catch (err) {
+      // If the stringify fails due to circular reference, the merge defaults
+      //   to a less-safe assignment that may still mutate elements in the target.
+      // You can change this part to throw an error for a truly safe deep merge.
+      cloneObj = Object.assign({}, obj);
     }
-  }
-  
-  return mergeDeep(target, ...sources);
-}
+    return cloneObj;
+  })(target);
+
+  const isObject = (obj) => obj && typeof obj === "object";
+
+  if (!isObject(target) || !isObject(source))
+    return source;
+
+  Object.keys(source).forEach(key => {
+    const targetValue = target[key];
+    const sourceValue = source[key];
+
+    if (Array.isArray(targetValue) && Array.isArray(sourceValue))
+      if (isMergingArrays) {
+        target[key] = targetValue.map((x, i) => sourceValue.length <= i
+          ? x
+          : mergeDeep(x, sourceValue[i], isMergingArrays));
+        if (sourceValue.length > targetValue.length)
+          target[key] = target[key].concat(sourceValue.slice(targetValue.length));
+      } else {
+        target[key] = targetValue.concat(sourceValue);
+      }
+    else if (isObject(targetValue) && isObject(sourceValue))
+      target[key] = mergeDeep(Object.assign({}, targetValue), sourceValue, isMergingArrays);
+    else
+      target[key] = sourceValue;
+  });
+
+  return target;
+};
+
 
 export class DurableDocs {
   /**
@@ -58,10 +80,10 @@ export class DurableDocs {
    * empty
    * @see List
    */
-  // public List(id?: string): List {
-  //   if (!id) return new List();
-  //   return new List(this.doNamespace, id);
-  // }
+  public List(): Promise<List> {
+    const list = new List(this.doNamespace);
+    return list.init();
+  }
 
   /**
    * Create and save a new document
@@ -132,11 +154,12 @@ export class DurableDocData {
 
   private async patchHandler(state: DurableObjectState, env, request: Request) {
     const data = await request.json() as any;
-
-    const stored = await state.storage.get(["initialized", "data"]);
+    const stored = await state.storage.get(["initialized", "data", "type"]);
 
     // Merge the data from the request on top of the stored data
     const mergedData = mergeDeep(stored.get("data") ?? {}, data);
+
+    console.log("data, stored, merged", data, stored, mergedData);
 
     await state.storage.put({
       data: mergedData,

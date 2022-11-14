@@ -12,66 +12,75 @@ import { deleteDO, getFromDO, initializeDO, setDOContent, updateDOContent } from
  */
 export class List {
   // References for the DO
-  private id?: string;
-  private doNamespace?: DurableObjectNamespace;
-  private doStub?: DurableObjectStub;
+  private id: string;
+  private doNamespace: DurableObjectNamespace;
+  private doStub: DurableObjectStub;
   /**
    * Lists can belong to only one Document at a time. A List must have a parent
    * Document, they cannot be free-floating.
    */
-  private parentDocumentId?: string;
+  // private parentRef?: Document | List;
+
+  private initialized = false;
 
   /**
    * Create a List instance which holds and interfaces with documents.
    * Providing no values to the constructor will create an empty list.
    * @param doNamespace Reference to the DurableDocumentData class
    * @param id Id of existing List
+   * @param ref Ref of this List in the parent Object or List (circular ref)
    */
   constructor(
-    doNamespace?: DurableObjectNamespace, 
-    id?: string
+    doNamespace: DurableObjectNamespace, 
+    id?: string,
+    // ref?: Document | List
   ) {
     // DurableObject references
-    this.id = id;
     this.doNamespace = doNamespace;
 
-    // Get stub if provided
-    if (this.id && this.doNamespace) {
+    if (id && this.doNamespace) {
+      // Get existing stub
+      this.id = id;
       const doId = this.doNamespace?.idFromString(this.id);
       this.doStub = this.doNamespace.get(doId);
-    }
-  }
 
-  /**
-   * Will create a DO and initialize it if this List doesn't have one already
-   */
-  private async ensureInitialized(): Promise<DurableObjectStub> {
-    if (!this.doNamespace) {
-      throw new Error("Cannot access List which posesses no namespace");
-    }
-
-    if (!this.doStub) {
+      this.initialized = true;
+    } else {
+      // Initialize
       const newDoId = this.doNamespace.newUniqueId();
       this.id = newDoId.toString();
       this.doStub = this.doNamespace.get(newDoId);
-  
+    }
+  }
+
+  public async init(): Promise<List> {
+    if (!this.initialized) {
       await initializeDO(this.doStub, "list");
     }
 
-    return this.doStub;
-  };
+    return this;
+  }
+
+  /**
+   * Set the circular reference to this List in the parent
+   * @param ref This List in the parent Document or List
+   */
+  // public setParentRef(
+  //   ref: Document | List
+  // ) {
+  //   this.parentRef = ref;
+  // };
 
   /**
    * Provides access to full data contents of the objects stored in the List.
    * @yields Every Document stored in this List
    */
-  public documents(): HAsyncIterator<Document> {
+  public async documents(): Promise<HAsyncIterator<Document>> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
-    if (!this.doStub) {
-      // This list is not created yet
-      return new HAsyncIterator();
+    if (!this.initialized) {
+      await initializeDO(this.doStub, "list");
     }
 
     // We'll generate the iterator in a closure to pass to the polyfill
@@ -101,13 +110,9 @@ export class List {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
-    if (!this.doStub) {
-      // This list is not created yet
-      return [];
-    }
 
     // Get the latest ids of the objects in this list
-    const data = await getFromDO(this.doStub);
+    const data = await getFromDO(this.doStub) ?? [];
     return data?.ids ?? [];
   }
 
@@ -141,19 +146,24 @@ export class List {
    * @returns The modified List.
    */
   public async addId(newId: string): Promise<void> {
+    if (!newId) {
+      throw new Error("Can't add empty id to List");
+    }
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
-    const doStub = await this.ensureInitialized();
+
+    console.log("newId", newId)
 
     const ids = await this.ids();
     if (ids.includes(newId)) {
       // Don't insert duplicates
+      console.log("id is a duplicate")
       return;
     }
 
     ids.push(newId);
-    await updateDOContent(doStub, {
+    await updateDOContent(this.doStub, {
       ids
     });
   }
@@ -168,9 +178,7 @@ export class List {
     await this.addId(doc.id);
 
     // Reference this list owner as parent reference for the doc
-    if (this.parentDocumentId) {
-      await doc.parents.addId(this.parentDocumentId);
-    }
+    await doc.parents.addId(this.id);
   }
 
   /**
@@ -187,9 +195,8 @@ export class List {
     }
 
     // Process documents in list, remove parent refs - keeping any orphans
-    await this.documents().forEach(async document => {
-      if (!this.parentDocumentId) return;
-      await document.parents.unlistId(this.parentDocumentId);
+    await (await this.documents()).forEach(async document => {
+      await document.parents.unlistId(this.id);
     });
 
     await setDOContent(this.doStub, []);
@@ -211,15 +218,14 @@ export class List {
     }
     
     // Process documents in list, remove parent refs and delete orphans 
-    await this.documents().forEach(async document => {
+    await (await this.documents()).forEach(async document => {
       // Remove parent reference for this List's parent
 
       // Skip docs that have more than one reference
       // If a doc has one reference, then it must be this List's parent
       const refCount = await (await document.parents.ids()).length;
       if (refCount > 1) {
-        if (!this.parentDocumentId) return;
-        await document.parents.unlistId(this.parentDocumentId);
+        await document.parents.unlistId(this.id);
       } else {
         // Don't bother updating the parent refs before deletion
         await document.delete();

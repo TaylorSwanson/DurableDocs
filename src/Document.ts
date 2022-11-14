@@ -110,25 +110,28 @@ export class Document {
    * Refs prop refers to an object's embedded classess that can be accessed for
    * direct usage and manipulation. E.g., adding an item to a List prop.
    */
-  private buildRefs(): void {
+  private async buildRefs(): Promise<void> {
     // Clear any old refs
     this.refs = {} as ChainItem;
 
     // Add Lists from ids
-    this.metadata?.listKeys?.forEach(listKey => {
+    for await (const listKey of this.metadata?.listKeys) {
       // Replicate structure defined by the path and put a list at the end
       const path = listKey.split(".");
-      
+
       // Do both at the same time:
       // - Get the List id at the end of the path, if set
       // - Build refs up to the List
       let dataPath = this.localdata;
       let refPath = this.refs;
-      path.forEach((p, idx) => {
-        if (idx >= path.length - 1) {
+      for (let i = 0; i < path.length; i++) {
+        const p = path[i];
+        if (i >= path.length - 1) {
           // We've reached the end of the chain
           const listId: string = dataPath?.[p];
-          refPath[p] = new List(this.doNamespace, listId);
+          const list = new List(this.doNamespace, listId);
+
+          refPath[p] = await list.init();
 
           return;
         }
@@ -138,8 +141,8 @@ export class Document {
         refPath = refPath[p] as ChainItem;
 
         dataPath = dataPath?.[p];
-      });
-    });
+      }
+    }
     // Add Documents from ids
     this.metadata?.idKeys?.forEach(idKey => {
       // Replicate structure defined by the path and put a Document at the end
@@ -289,6 +292,8 @@ export class Document {
     
     // Load full DO content
     const data = await getFromDO(this.doStub);
+
+    console.log("d", data);
 
     // Handle case where document was never initialized
     if (!data) {

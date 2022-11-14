@@ -26,7 +26,7 @@ export default {
       name: "Test post",
       // Anonymous, no author set;
       author: new ObjectId(),
-      replies: new List()
+      replies: await docs.List()
     });
     // User replies to post
     const reply = await docs.create({
@@ -43,7 +43,7 @@ export default {
 
     // Get username of each person who replied
     const usernames: string[] = [];
-    for await (const reply of (post.refs.replies as List).documents()) {
+    for await (const reply of await (post.refs.replies as List).documents()) {
       usernames.push((await reply.refs.author.data()).username);
     }
 
