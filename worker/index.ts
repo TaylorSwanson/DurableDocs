@@ -4,7 +4,7 @@
  * locally for development and testing.
  */
 
-import { List, ObjectId } from "../src";
+import { List } from "../src";
 import { DurableDocData, DurableDocs } from "../src/DurableDocs";
 
 type Env = {
@@ -25,7 +25,7 @@ export default {
     const post = await docs.create({
       name: "Test post",
       // Anonymous, no author set;
-      author: new ObjectId(),
+      author: await docs.Document(),
       replies: await docs.List()
     });
     // User replies to post
