@@ -54,6 +54,7 @@ export class List {
     if (this.doStub) return;
 
     const newDoId = this.doNamespace.newUniqueId();
+    this.id = newDoId.toString();
     this.doStub = this.doNamespace.get(newDoId);
 
     await initializeDO(this.doStub, "list");
@@ -142,12 +143,7 @@ export class List {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
-    // Ensure list DO exists
-    if (!this.doStub) {
-      const newDoId = this.doNamespace.newUniqueId();
-      this.doStub = this.doNamespace.get(newDoId);
-      await initializeDO(this.doStub, "list");
-    }
+    await this.ensureInitialized();
 
     const ids = await this.ids();
     if (ids.includes(newId)) {
