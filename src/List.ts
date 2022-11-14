@@ -45,19 +45,20 @@ export class List {
   /**
    * Will create a DO and initialize it if this List doesn't have one already
    */
-  private async ensureInitialized(): Promise<void> {
+  private async ensureInitialized(): Promise<DurableObjectStub> {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
 
-    // Skip if it exists
-    if (this.doStub) return;
+    if (!this.doStub) {
+      const newDoId = this.doNamespace.newUniqueId();
+      this.id = newDoId.toString();
+      this.doStub = this.doNamespace.get(newDoId);
+  
+      await initializeDO(this.doStub, "list");
+    }
 
-    const newDoId = this.doNamespace.newUniqueId();
-    this.id = newDoId.toString();
-    this.doStub = this.doNamespace.get(newDoId);
-
-    await initializeDO(this.doStub, "list");
+    return this.doStub;
   };
 
   /**
@@ -143,7 +144,7 @@ export class List {
     if (!this.doNamespace) {
       throw new Error("Cannot access List which posesses no namespace");
     }
-    await this.ensureInitialized();
+    const doStub = await this.ensureInitialized();
 
     const ids = await this.ids();
     if (ids.includes(newId)) {
@@ -152,7 +153,7 @@ export class List {
     }
 
     ids.push(newId);
-    await updateDOContent(this.doStub, {
+    await updateDOContent(doStub, {
       ids
     });
   }
