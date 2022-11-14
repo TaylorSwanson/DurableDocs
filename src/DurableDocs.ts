@@ -108,6 +108,16 @@ export class DurableDocs {
 
     return document.load();
   }
+
+  isIdValid(id: string): Boolean {
+    try {
+      // This will throw on non-ids
+      this.doNamespace.idFromString(id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
 
 /**
