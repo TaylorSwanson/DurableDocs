@@ -71,10 +71,10 @@ export class DurableDocs {
    * empty
    * @see ObjectId
    */
-  // public ObjectId(id?: string): ObjectId {
-  //   if (!id) return new ObjectId();
-  //   return new ObjectId(id);
-  // }
+  public Document(): Promise<Document> {
+    const document = new Document(this.doNamespace);
+    return document.init();
+  }
   /**
    * Placeholder reference for a list of documents in a new document, default
    * empty
@@ -94,7 +94,7 @@ export class DurableDocs {
     if (!objectData) objectData = {};
 
     const newDoId = this.doNamespace.newUniqueId();
-    const document = new Document(this.doNamespace, newDoId);
+    const document = new Document(this.doNamespace, newDoId.toString());
 
     return document.init(objectData);
   }
@@ -105,7 +105,7 @@ export class DurableDocs {
    */
   async get(id: string): Promise<Document> {
     const doId = this.doNamespace.idFromString(id);
-    const document = new Document(this.doNamespace, doId);
+    const document = new Document(this.doNamespace, id);
 
     return document.load();
   }
@@ -158,8 +158,6 @@ export class DurableDocData {
 
     // Merge the data from the request on top of the stored data
     const mergedData = mergeDeep(stored.get("data") ?? {}, data);
-
-    console.log("data, stored, merged", data, stored, mergedData);
 
     await state.storage.put({
       data: mergedData,

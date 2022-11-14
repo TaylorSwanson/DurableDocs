@@ -92,9 +92,7 @@ export class List {
       const ids: string[] = data?.ids ?? [];
 
       for await (const id of ids) {
-        const doId = doNamespace.idFromString(id);
-        const document = new Document(doNamespace, doId);
-
+        const document = new Document(doNamespace, id);
         yield document.load();
       }
     })();
@@ -153,12 +151,9 @@ export class List {
       throw new Error("Cannot access List which posesses no namespace");
     }
 
-    console.log("newId", newId)
-
     const ids = await this.ids();
     if (ids.includes(newId)) {
       // Don't insert duplicates
-      console.log("id is a duplicate")
       return;
     }
 
@@ -178,7 +173,7 @@ export class List {
     await this.addId(doc.id);
 
     // Reference this list owner as parent reference for the doc
-    await doc.parents.addId(this.id);
+    await (await doc.parents() as List).addId(this.id);
   }
 
   /**
@@ -196,7 +191,7 @@ export class List {
 
     // Process documents in list, remove parent refs - keeping any orphans
     await (await this.documents()).forEach(async document => {
-      await document.parents.unlistId(this.id);
+      await (await document.parents()).unlistId(this.id);
     });
 
     await setDOContent(this.doStub, []);
@@ -223,9 +218,10 @@ export class List {
 
       // Skip docs that have more than one reference
       // If a doc has one reference, then it must be this List's parent
-      const refCount = await (await document.parents.ids()).length;
+      const parentList = await document.parents();
+      const refCount = await parentList.size();
       if (refCount > 1) {
-        await document.parents.unlistId(this.id);
+        await parentList.unlistId(this.id);
       } else {
         // Don't bother updating the parent refs before deletion
         await document.delete();

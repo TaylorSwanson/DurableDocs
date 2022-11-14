@@ -1,5 +1,5 @@
 
-// Used to pass around references to DOs without loading data until needed
+// Used to pass around references to DOs as document-like objects
 
 import {
   List,
@@ -29,7 +29,8 @@ type ContentRefDef = {
   refs: {
     idKeys: string[],
     listKeys: string[],
-  }
+  },
+  parents?: List
 };
 
 export class Document {
@@ -37,23 +38,18 @@ export class Document {
   
   // References to DO
   private doNamespace: DurableObjectNamespace;
-  private doStub?: DurableObjectStub;
+  private doStub: DurableObjectStub;
 
   /**
    * List of parents who own this object
    */
-  public parents: List;
+  private parentList?: List;
 
   /**
    * Chainable list of properties that provide access to the Document's
    * non-primitive types. Populated on init() and update().
    */
   public refs: ChainItem = {};
-
-  /**
-   * Flag for whether this instance has had its minimum content loaded.
-   */
-  private initialized = false;
 
   /**
    * Tracks whether the document is not initialized (has never created a DO)
@@ -69,7 +65,7 @@ export class Document {
    * Document data currently stored in memory from the last init() call, may be
    * stale.
    */
-  private localdata: { [key: string]: any };
+  private localData: { [key: string]: any };
 
   /**
    * In-memory metadata associated with localdata, loaded from last init() call,
@@ -83,25 +79,28 @@ export class Document {
 
   constructor(
     doNamespace: DurableObjectNamespace,
-    id: string | DurableObjectId
+    id?: string
   ) {
     // DurableObject references
-    this.id = id.toString();
     this.doNamespace = doNamespace;
 
     // Initialization
-    this.localdata = {};
+    this.localData = {};
     this.metadata = {
       listKeys: [],
       idKeys: []
     };
-    // Empty list
-    this.parents = new List(this.doNamespace);
 
-    // Get stub if provided
-    if (this.id && this.doNamespace) {
-      const doId = this.doNamespace.idFromString(this.id);
+    if (id && this.doNamespace) {
+      // Get existing stub
+      this.id = id;
+      const doId = this.doNamespace?.idFromString(this.id);
       this.doStub = this.doNamespace.get(doId);
+    } else {
+      // Initialize by creating a new DO
+      const newDoId = this.doNamespace.newUniqueId();
+      this.id = newDoId.toString();
+      this.doStub = this.doNamespace.get(newDoId);
     }
   }
 
@@ -122,7 +121,7 @@ export class Document {
       // Do both at the same time:
       // - Get the List id at the end of the path, if set
       // - Build refs up to the List
-      let dataPath = this.localdata;
+      let dataPath = this.localData;
       let refPath = this.refs;
       for (let i = 0; i < path.length; i++) {
         const p = path[i];
@@ -151,7 +150,7 @@ export class Document {
       // Do both at the same time:
       // - Get the Document id at the end of the path, if set
       // - Build refs up to the ObjectId
-      let dataPath = this.localdata;
+      let dataPath = this.localData;
       let refPath = this.refs;
       path.forEach((p, idx) => {
         if (idx >= path.length - 1) {
@@ -181,7 +180,7 @@ export class Document {
    * @param path Path in the parent object that this object is working in.
    * @returns ContentRefDef type object, structured for easy parsing.
    */
-  private placeTypesAndRefs(
+  private prepareStoreData(
     target: { [key: string]: any },
     path = ""
   ): ContentRefDef {
@@ -216,7 +215,7 @@ export class Document {
           }
         } else {
           // Recurse into the object at this key
-          const { data, refs } = this.placeTypesAndRefs(target[key], keyPath);
+          const { data, refs } = this.prepareStoreData(target[key], keyPath);
           // Include those results into the larger result
           idKeys.push(...refs.idKeys);
           listKeys.push(...refs.listKeys);
@@ -247,10 +246,9 @@ export class Document {
       throw new Error("Cannot init Document that has no attached DO");
     }
 
-    const setData = this.placeTypesAndRefs(content);
+    const setData = this.prepareStoreData(content);
     await setDOContent(this.doStub, setData);
 
-    this.initialized = false;
     return this.load();
   }
   
@@ -259,10 +257,9 @@ export class Document {
       throw new Error("Cannot init Document that has no attached DO");
     }
 
-    const setData = this.placeTypesAndRefs(content);
+    const setData = this.prepareStoreData(content);
     await updateDOContent(this.doStub, setData);
 
-    this.initialized = false;
     return this.load();
   }
 
@@ -273,10 +270,13 @@ export class Document {
 
     if (!content) content = {};
 
-    const setData = this.placeTypesAndRefs(content);
+    const setData = this.prepareStoreData(content);
+    const parents = new List(this.doNamespace);
+    setData.parents = await parents.init();
+    
     await initializeDO(this.doStub, "document", setData);
-
-    this.initialized = false;
+    
+    this.parentList = parents;
     return this.load();
   }
 
@@ -288,27 +288,22 @@ export class Document {
     if (!this.doNamespace || !this.doStub) {
       throw new Error("Cannot init Document that has no attached DO");
     }
-    if (this.initialized) return this;
     
     // Load full DO content
     const data = await getFromDO(this.doStub);
 
-    console.log("d", data);
-
     // Handle case where document was never initialized
     if (!data) {
-      this.initialized = true;
-      this.isNull = true;
-      return this;
+      // Document was never initialized
+      return this.init();
     }
 
     // Store contents
     this.metadata = data.refs ?? {};
-    this.localdata = data.data ?? {};
+    this.localData = data.data ?? {};
     
     // Update public refs
     this.buildRefs();
-    this.initialized = true;
     
     return this;
   }
@@ -318,16 +313,29 @@ export class Document {
    * not already initialized.
    * @returns Stored contents of the Document.
    */
-  async data(): Promise<{ [key: string]: any } | null> {
-    if (!this.initialized) {
-      await this.load();
-    }
-
-    if (this.isNull) {
+  async data(): Promise<{ [key: string]: any } | null> {    
+    await this.load();
+    if (Object.getOwnPropertyNames(this.localData).length === 0) {
       return null;
     }
+    return structuredClone(this.localData);
+  }
 
-    return structuredClone(this.localdata);
+  /**
+   * Returns List containing all documents that reference this Document
+   */
+  async parents(): Promise<List> {
+    if (!this.doNamespace || !this.doStub) {
+      throw new Error("Cannot init Document that has no attached DO");
+    }
+    
+    await this.load();
+
+    if (!this.parentList) {
+      throw new Error("Parent list for Document is not defined");
+    }
+
+    return this.parentList;
   }
 
   /**
@@ -337,7 +345,9 @@ export class Document {
     if (!this.doNamespace || !this.doStub) {
       throw new Error("Cannot delete Document that has no attached DO");
     }
-    await this.parents.delete();
+    if (this.parentList) {
+      await this.parentList.delete();
+    }
     await deleteDO(this.doStub);
   }
 }
