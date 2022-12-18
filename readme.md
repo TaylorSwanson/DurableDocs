@@ -12,7 +12,10 @@ platform.
 ![npm](https://img.shields.io/npm/v/durabledocs?style=flat-square)
 
 ```ts
-// Make user
+// Example "forum"
+
+const docs = new DurableDocs(env.DURABLE_DOC_DATA);
+
 const user = await docs.create({
   username: "ExampleUser123",
   website: "example.com",
@@ -22,8 +25,8 @@ const user = await docs.create({
 const post = await docs.create({
   name: "Test post",
   // Anonymous, no author set;
-  author: DurableDocs.ObjectId,
-  replies: DurableDocs.List
+  author: await docs.Document(),
+  replies: await docs.List()
 });
 // User replies to post
 const reply = await docs.create({
@@ -31,16 +34,20 @@ const reply = await docs.create({
   author: user
 });
 
+console.log("[1] Number of replies: ", await (post.refs.replies as List).size());
+
 // Associate reply to post
-await post.refs.replies.addDoc(reply);
+await (post.refs.replies as List).addDoc(reply);
+
+console.log("[2] Number of replies: ", await (post.refs.replies as List).size());
 
 // Get username of each person who replied
 const usernames: string[] = [];
-for await (const reply of (post.refs.replies as List).documents()) {
+for await (const reply of await (post.refs.replies as List).documents()) {
   usernames.push((await reply.refs.author.data()).username);
 }
 
-// usernames: ["ExampleUser123"]
+console.log("[3] Usernames: ", usernames);
 
 ```
 
@@ -88,8 +95,7 @@ your worker's main entrypoint:
 import { DurableDocs, DurableDocData } from "durabledocs";
 
 type Env = {
-  DURABLE_DOC_DATA: DurableObjectNamespace,
-  DURABLE_DOC_KV: KVNamespace
+  DURABLE_DOC_DATA: DurableObjectNamespace
 }
 
 // Worker entrypoint for development
@@ -99,7 +105,7 @@ export default {
     const newDoc = await docs.create({
       name: "Document One",
       numbers: 1234,
-      otherDoc: DurableDocs.ObjectId,
+      otherDoc: await docs.Document(),
       users: {
         admins: DurableDocs.List,
         members: DurableDocs.List
@@ -152,7 +158,7 @@ const docs = new DurableDocs(env.DURABLE_DOC_DATA, env.DURABLE_DOC_KV);
 const newThread = await docs.create({
   title: "Lorem Ipsum",
   content: "Consectetur adipiscing elit",
-  author: docs.ObjectId(),             // Anonymous, not set
+  author: await docs.document(),             // Anonymous, not set
   properties: {
     views: 0,
     isLocked: false,
@@ -163,7 +169,7 @@ const newThread = await docs.create({
 });
 
 const reply = await docs.create({
-  author: DurableDocs.ObjectId("111"),      // An existing user
+  author: await docs.Document("111"),         // An existing user
   content: "Morbi ullamcorper dapibus metus, sed porttitor diam feugiat nec.",
   properties: {
     createdAt: new Date()

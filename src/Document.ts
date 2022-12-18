@@ -3,7 +3,6 @@
 
 import {
   List,
-  ObjectId
 } from ".";
 
 import { 
@@ -18,7 +17,7 @@ import {
  * Used for ref type.
  * Recursive, allows chaining, but the end of the chain will always be a class.
  */
-// type ChainItem = { [key: string]: ChainItem | List | ObjectId };
+// type ChainItem = { [key: string]: ChainItem | List };
 type ChainItem = { [key: string]: any };
 
 /**
@@ -151,7 +150,6 @@ export class Document {
       
       // Do both at the same time:
       // - Get the Document id at the end of the path, if set
-      // - Build refs up to the ObjectId
       let dataPath = this.localData;
       let refPath = this.refs;
 
@@ -180,7 +178,7 @@ export class Document {
   }
 
   /**
-   * Find types in content that might be Lists or Documents or ObjectIds,
+   * Find types in content that might be Lists or Documents,
    * then replace them with strings representing them. Also generate object
    * that maps the key path to type for buildRefs() function on init.
    * @param target Object to find classes in and mark down type paths.
@@ -207,8 +205,7 @@ export class Document {
         } else if (
           // Check if these are custom DurableDocs classes
           target[key] instanceof List ||
-          target[key] instanceof Document ||
-          target[key] instanceof ObjectId
+          target[key] instanceof Document
         ) {
           // Write id of the instance, prevent [Object object] when stringified
           // Write nulls to places where the object is not instantiated yet

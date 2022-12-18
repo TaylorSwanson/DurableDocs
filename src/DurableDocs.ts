@@ -69,10 +69,9 @@ export class DurableDocs {
   /**
    * Placeholder reference for a single document id in a new document, default
    * empty
-   * @see ObjectId
    */
-  public async Document(): Promise<Document> {
-    const document = new Document(this.doNamespace);
+  public async Document(existingDocId?: string): Promise<Document> {
+    const document = new Document(this.doNamespace, existingDocId);
     return document.init();
   }
   /**
