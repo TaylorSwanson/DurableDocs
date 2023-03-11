@@ -1,15 +1,11 @@
 
-# DurableDocs (Work in Progress)
-## This package is not suitable for use at this time!
-
-**It is currently being extracted from a larger project to a standalone
-package.**
-
-DurableDocs is a document abstraction on top of CloudFlare's Durable Objects
-platform.
-
+# DurableDocs (Proof of concept)
 [![GitHub license](https://img.shields.io/github/license/TaylorSwanson/DurableDocs?style=flat-square)](https://github.com/TaylorSwanson/DurableDocs/blob/main/LICENSE)
 ![npm](https://img.shields.io/npm/v/durabledocs?style=flat-square)
+## This project was initially more serious, technical endeavor; this can push DurableObject limits too far.
+
+DurableDocs is a document abstraction on top of CloudFlare's Durable Objects
+platform. It's not feature-complete, but does demonstrate how the DO API can be used in a neat way.
 
 ```ts
 // Example "forum"
@@ -52,8 +48,7 @@ console.log("[3] Usernames: ", usernames);
 ```
 
 ## Installation
-**This package is in active development and the API is subject to change!**
-It is currently being extracted from a larger project to a standalone module.
+**API is subject to change!**
 
 ```sh
 npm i durabledocs
